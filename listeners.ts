@@ -34,7 +34,7 @@ function on_touch(event: PointerEvent) {
 
     } else {
         is_drawing = true;
-        Block.draw_line(last_point, last_point, '000');
+        Block.draw_line(last_point, last_point, '000000');
     }
 }
 
@@ -45,7 +45,7 @@ function on_drag(event: PointerEvent) {
         if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else {
-            if (is_drawing) Block.draw_line(last_point, point, '000');
+            if (is_drawing) Block.draw_line(last_point, point, '000000');
         }
     }
 
@@ -101,7 +101,9 @@ export function register_listeners() {
     document.addEventListener('pointermove', on_drag);
     document.addEventListener('pointerup', on_lift);
     document.addEventListener('pointercancel', on_lift);
+    document.addEventListener('contextmenu', on_lift);
     document.addEventListener('wheel', on_scroll, {passive: false});
+
     document.addEventListener('keydown', on_key);
 
     on_resize();
