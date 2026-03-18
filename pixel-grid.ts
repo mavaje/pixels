@@ -10,10 +10,10 @@ export class PixelGrid {
     private static width: number = 0;
     private static height: number = 0;
 
-    private static canvas: HTMLCanvasElement = document.getElementById('pixel-grid') as HTMLCanvasElement;
+    static canvas: HTMLCanvasElement = document.getElementById('pixel-grid') as HTMLCanvasElement;
     private static context: CanvasRenderingContext2D;
 
-    private static debug_layer = document.getElementById('debug-layer');
+    private static debug_layer = document.getElementById('block-borders');
 
     static resize() {
         const {width, height} = document.body.getBoundingClientRect();
@@ -23,6 +23,10 @@ export class PixelGrid {
         this.sync_canvas();
         this.sync_blocks();
         this.render();
+    }
+
+    static size(): number {
+        return Math.min(this.width, this.height);
     }
 
     static left(): number {
@@ -97,7 +101,7 @@ export class PixelGrid {
             block.point.y - Math.floor(this.top()),
         );
 
-        if (DEBUG && block.debug_element) {
+        if (DEBUG.block_borders && block.debug_element) {
             const x = Math.floor((block.point.x - this.left()) * this.scale);
             const y = Math.floor((block.point.y - this.top()) * this.scale);
             const size = Block.SIZE * this.scale;
@@ -125,7 +129,7 @@ export class PixelGrid {
 
     static set_scale(scale: number, origin?: Point) {
         scale = Math.max(scale, 1);
-        // scale = Math.min(scale, 1);
+        scale = Math.min(scale, this.size() / 8);
 
         if (origin) {
             this.centre = this.centre
@@ -142,9 +146,13 @@ export class PixelGrid {
         this.set_scale(this.scale * 1.01 ** -delta, origin);
     }
 
+    static set_size(size: number) {
+        this.set_scale(this.size() / size);
+    }
+
     private static timeout: NodeJS.Timeout = null;
     static update_hash() {
-        const hash = this.centre.hash_id(this.scale);
+        const hash = this.centre.hash_id(this.size() / this.scale);
         if (hash !== location.hash) {
             if (this.timeout) clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {

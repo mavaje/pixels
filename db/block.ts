@@ -50,7 +50,7 @@ export class Block {
             this.debug_element?.remove();
         }
 
-        if (DEBUG) {
+        if (DEBUG.block_borders) {
             this.debug_element = document.createElement('div')
             this.debug_element.id = `block:${this.point.block_id()}`;
             this.debug_element.classList.add('block');
@@ -71,6 +71,8 @@ export class Block {
 
         p1 = p1.grid().floor();
         p2 = p2.grid().floor();
+
+        hex = hex.replace(/[^0-9a-f]/gi, '');
 
         const delta = p2.minus(p1);
 

@@ -1,2 +1,4 @@
 
-export const DEBUG = false;
+export const DEBUG = {
+    block_borders: false,
+};

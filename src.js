@@ -10974,7 +10974,9 @@ var init_db = __esm({
 var DEBUG;
 var init_config = __esm({
   "config.ts"() {
-    DEBUG = false;
+    DEBUG = {
+      block_borders: false
+    };
   }
 });
 
@@ -11008,7 +11010,7 @@ var init_block = __esm({
           delete _Block.blocks[this.point.block_id()];
           this.debug_element?.remove();
         };
-        if (DEBUG) {
+        if (DEBUG.block_borders) {
           this.debug_element = document.createElement("div");
           this.debug_element.id = `block:${this.point.block_id()}`;
           this.debug_element.classList.add("block");
@@ -11034,6 +11036,7 @@ var init_block = __esm({
         const blocks = {};
         p1 = p1.grid().floor();
         p2 = p2.grid().floor();
+        hex = hex.replace(/[^0-9a-f]/gi, "");
         const delta = p2.minus(p1);
         const dx = Math.abs(delta.x);
         const dy = Math.abs(delta.y);
@@ -11152,7 +11155,7 @@ var init_point = __esm({
       hash_id(scale) {
         return `#${[
           ...this.grid().floor().xy(),
-          scale.toFixed(2)
+          Math.floor(scale)
         ].join(",")}`;
       }
       floor() {
@@ -11227,7 +11230,7 @@ var init_pixel_grid = __esm({
         this.canvas = document.getElementById("pixel-grid");
       }
       static {
-        this.debug_layer = document.getElementById("debug-layer");
+        this.debug_layer = document.getElementById("block-borders");
       }
       static resize() {
         const { width, height } = document.body.getBoundingClientRect();
@@ -11236,6 +11239,9 @@ var init_pixel_grid = __esm({
         this.sync_canvas();
         this.sync_blocks();
         this.render();
+      }
+      static size() {
+        return Math.min(this.width, this.height);
       }
       static left() {
         return this.centre.x - this.width / (2 * this.scale);
@@ -11297,7 +11303,7 @@ var init_pixel_grid = __esm({
           block.point.x - Math.floor(this.left()),
           block.point.y - Math.floor(this.top())
         );
-        if (DEBUG && block.debug_element) {
+        if (DEBUG.block_borders && block.debug_element) {
           const x = Math.floor((block.point.x - this.left()) * this.scale);
           const y = Math.floor((block.point.y - this.top()) * this.scale);
           const size = Block.SIZE * this.scale;
@@ -11320,6 +11326,7 @@ var init_pixel_grid = __esm({
       }
       static set_scale(scale, origin) {
         scale = Math.max(scale, 1);
+        scale = Math.min(scale, this.size() / 8);
         if (origin) {
           this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);
         }
@@ -11330,11 +11337,14 @@ var init_pixel_grid = __esm({
       static scale_by(delta, origin) {
         this.set_scale(this.scale * 1.01 ** -delta, origin);
       }
+      static set_size(size) {
+        this.set_scale(this.size() / size);
+      }
       static {
         this.timeout = null;
       }
       static update_hash() {
-        const hash = this.centre.hash_id(this.scale);
+        const hash = this.centre.hash_id(this.size() / this.scale);
         if (hash !== location.hash) {
           if (this.timeout) clearTimeout(this.timeout);
           this.timeout = setTimeout(() => {
@@ -11350,6 +11360,47 @@ var init_pixel_grid = __esm({
   }
 });
 
+// palette.ts
+var palette_exports = {};
+__export(palette_exports, {
+  Palette: () => Palette
+});
+var Palette;
+var init_palette = __esm({
+  "palette.ts"() {
+    Palette = class {
+      static {
+        this.element = document.getElementById("palette");
+      }
+      static {
+        this.colour_pips = [];
+      }
+      static {
+        this.current_colour = "#000000";
+      }
+      static initialise() {
+        this.add_colour_pip("#000000");
+        this.add_colour_pip("#ff0000");
+        this.add_colour_pip("#ffff00");
+        this.add_colour_pip("#00ff00");
+        this.add_colour_pip("#00ffff");
+        this.add_colour_pip("#0000ff");
+        this.add_colour_pip("#ff00ff");
+        this.add_colour_pip("#ffffff");
+      }
+      static add_colour_pip(hex) {
+        const pip = document.createElement("div");
+        pip.classList.add("pip");
+        pip.style.background = hex;
+        pip.addEventListener("click", () => {
+          this.current_colour = hex;
+        });
+        this.element.append(pip);
+      }
+    };
+  }
+});
+
 // listeners.ts
 var listeners_exports = {};
 __export(listeners_exports, {
@@ -11359,10 +11410,10 @@ function on_resize(event) {
   PixelGrid.resize();
 }
 function on_hash(event) {
-  const [x, y, s] = location.hash.slice(1).split(",").map((d, i) => i < 2 ? Number.parseInt(d) : Number.parseFloat(d));
+  const [x, y, z] = location.hash.slice(1).split(",").map((d, i) => i < 2 ? Number.parseInt(d) : Number.parseFloat(d));
   if (![x, y].some(isNaN)) {
     PixelGrid.move_to(Point.grid(x, y));
-    if (!isNaN(s)) PixelGrid.set_scale(s);
+    if (!isNaN(z)) PixelGrid.set_size(z);
   }
 }
 function on_touch(event) {
@@ -11372,7 +11423,7 @@ function on_touch(event) {
   if (event.ctrlKey || event.metaKey) {
   } else {
     is_drawing = true;
-    Block.draw_line(last_point, last_point, "000000");
+    Block.draw_line(last_point, last_point, Palette.current_colour);
   }
 }
 function on_drag(event) {
@@ -11381,7 +11432,7 @@ function on_drag(event) {
     if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
     } else {
-      if (is_drawing) Block.draw_line(last_point, point, "000000");
+      if (is_drawing) Block.draw_line(last_point, point, Palette.current_colour);
     }
   }
   last_point = point;
@@ -11425,12 +11476,12 @@ function on_key(event) {
 function register_listeners() {
   window.addEventListener("resize", on_resize);
   window.addEventListener("hashchange", on_hash);
-  document.addEventListener("pointerdown", on_touch);
+  PixelGrid.canvas.addEventListener("pointerdown", on_touch);
   document.addEventListener("pointermove", on_drag);
   document.addEventListener("pointerup", on_lift);
   document.addEventListener("pointercancel", on_lift);
   document.addEventListener("contextmenu", on_lift);
-  document.addEventListener("wheel", on_scroll, { passive: false });
+  PixelGrid.canvas.addEventListener("wheel", on_scroll, { passive: false });
   document.addEventListener("keydown", on_key);
   on_resize();
   on_hash();
@@ -11441,6 +11492,7 @@ var init_listeners = __esm({
     init_pixel_grid();
     init_point();
     init_block();
+    init_palette();
     is_touching = false;
     is_drawing = false;
     initial_point = null;
@@ -11453,7 +11505,9 @@ var require_main = __commonJS({
   "main.js"(exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var listeners_1 = (init_listeners(), __toCommonJS(listeners_exports));
+    var palette_1 = (init_palette(), __toCommonJS(palette_exports));
     (0, listeners_1.register_listeners)();
+    palette_1.Palette.initialise();
   }
 });
 export default require_main();

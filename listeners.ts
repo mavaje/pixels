@@ -1,13 +1,14 @@
 import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
 import {Block} from "./db/block";
+import {Palette} from "./palette";
 
 function on_resize(event?: UIEvent) {
     PixelGrid.resize();
 }
 
 function on_hash(event?: HashChangeEvent) {
-    const [x, y, s] = location.hash
+    const [x, y, z] = location.hash
         .slice(1)
         .split(',')
         .map((d, i) => i < 2
@@ -15,7 +16,7 @@ function on_hash(event?: HashChangeEvent) {
             : Number.parseFloat(d));
     if (![x, y].some(isNaN)) {
         PixelGrid.move_to(Point.grid(x, y));
-        if (!isNaN(s)) PixelGrid.set_scale(s);
+        if (!isNaN(z)) PixelGrid.set_size(z);
     }
 }
 
@@ -34,7 +35,7 @@ function on_touch(event: PointerEvent) {
 
     } else {
         is_drawing = true;
-        Block.draw_line(last_point, last_point, '000000');
+        Block.draw_line(last_point, last_point, Palette.current_colour);
     }
 }
 
@@ -45,7 +46,7 @@ function on_drag(event: PointerEvent) {
         if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else {
-            if (is_drawing) Block.draw_line(last_point, point, '000000');
+            if (is_drawing) Block.draw_line(last_point, point, Palette.current_colour);
         }
     }
 
@@ -97,12 +98,12 @@ export function register_listeners() {
     window.addEventListener('resize', on_resize);
     window.addEventListener('hashchange', on_hash);
 
-    document.addEventListener('pointerdown', on_touch);
+    PixelGrid.canvas.addEventListener('pointerdown', on_touch);
     document.addEventListener('pointermove', on_drag);
     document.addEventListener('pointerup', on_lift);
     document.addEventListener('pointercancel', on_lift);
     document.addEventListener('contextmenu', on_lift);
-    document.addEventListener('wheel', on_scroll, {passive: false});
+    PixelGrid.canvas.addEventListener('wheel', on_scroll, {passive: false});
 
     document.addEventListener('keydown', on_key);
 

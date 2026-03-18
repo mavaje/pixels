@@ -85,7 +85,7 @@ export class Point {
     public hash_id(scale?: number): string {
         return `#${[
             ...this.grid().floor().xy(),
-            scale.toFixed(2),
+            Math.floor(scale),
         ].join(',')}`;
     }
 
