@@ -7,9 +7,15 @@ function on_resize(event?: UIEvent) {
 }
 
 function on_hash(event?: HashChangeEvent) {
-    const [x, y] = location.hash.slice(1).split(',').map(d => Number.parseInt(d));
+    const [x, y, s] = location.hash
+        .slice(1)
+        .split(',')
+        .map((d, i) => i < 2
+            ? Number.parseInt(d)
+            : Number.parseFloat(d));
     if (![x, y].some(isNaN)) {
         PixelGrid.move_to(Point.grid(x, y));
+        if (!isNaN(s)) PixelGrid.set_scale(s);
     }
 }
 
@@ -54,12 +60,18 @@ function on_lift(event: PointerEvent) {
 function on_scroll(event: WheelEvent) {
     event.preventDefault();
 
-    const delta = Point.grid(
+    const delta = Point.view(
         event.shiftKey ? event.deltaY : event.deltaX,
         event.shiftKey ? event.deltaX : event.deltaY,
+        0,
     );
 
-    PixelGrid.move_by(delta);
+    if (event.ctrlKey || event.metaKey) {
+        const origin = Point.view(event.x, event.y);
+        PixelGrid.scale_by(event.deltaY, origin);
+    } else {
+        PixelGrid.move_by(delta);
+    }
 }
 
 function on_key(event: KeyboardEvent) {

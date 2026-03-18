@@ -11046,7 +11046,7 @@ var init_block = __esm({
           const pixel_id = p.pixel_id();
           blocks[block_id] ??= {};
           blocks[block_id][pixel_id] = hex;
-          const [px, py] = p.pixel_xy();
+          const [px, py] = p.pixel().xy();
           _Block.blocks[block_id]?.set_pixel([px, py], hex);
           if (p.equals(p2)) break;
           const e2 = error2 * 2;
@@ -11098,11 +11098,11 @@ var init_point = __esm({
         this.context = context;
         if (this.w !== 0) this.w = 1;
       }
-      static grid(x, y) {
-        return new _Point(x, y, 1, "grid");
+      static grid(x, y, w = 1) {
+        return new _Point(x, y, w, "grid");
       }
-      static view(x, y) {
-        return new _Point(x, y, 1, "view");
+      static view(x, y, w = 1) {
+        return new _Point(x, y, w, "view");
       }
       in_context(context) {
         switch (context) {
@@ -11137,32 +11137,36 @@ var init_point = __esm({
       xy() {
         return [this.x, this.y];
       }
-      block_xy() {
-        return [
-          Math.floor(this.x / Block.SIZE) * Block.SIZE,
-          Math.floor(this.y / Block.SIZE) * Block.SIZE
-        ];
+      block() {
+        return this.grid().scale(1 / Block.SIZE).floor().scale(Block.SIZE);
       }
       block_id() {
-        return this.block_xy().map((d) => d / Block.SIZE).join(",");
+        return this.block().xy().map((d) => d / Block.SIZE).join(",");
       }
-      pixel_xy() {
-        const [bx, by] = this.block_xy();
-        return [
-          Math.floor(this.x - bx),
-          Math.floor(this.y - by)
-        ];
+      pixel() {
+        return this.grid().minus(this.block()).floor();
       }
       pixel_id() {
-        return this.pixel_xy().map((d) => d.toString(16).padStart(2, "0")).join("");
+        return this.pixel().xy().map((d) => d.toString(16).padStart(2, "0")).join("");
       }
-      hash_id() {
-        return `#${this.grid().floor().xy().join(",")}`;
+      hash_id(scale) {
+        return `#${[
+          ...this.grid().floor().xy(),
+          scale.toFixed(2)
+        ].join(",")}`;
       }
       floor() {
         return new _Point(
           Math.floor(this.x),
           Math.floor(this.y),
+          this.w,
+          this.context
+        );
+      }
+      scale(s) {
+        return new _Point(
+          this.x * s,
+          this.y * s,
           this.w,
           this.context
         );
@@ -11220,18 +11224,18 @@ var init_pixel_grid = __esm({
         this.height = 0;
       }
       static {
-        this.canvas = document.getElementById("pixel-grid");
+        this.grid_canvas = document.getElementById("pixel-grid");
       }
       static {
         this.debug_layer = document.getElementById("debug-layer");
       }
       static resize() {
         const { width, height } = document.body.getBoundingClientRect();
-        this.width = _PixelGrid.canvas.width = width;
-        this.height = _PixelGrid.canvas.height = height;
-        this.context = this.canvas.getContext("2d");
-        this.context.imageSmoothingEnabled = false;
-        this.initialise_blocks();
+        this.width = _PixelGrid.grid_canvas.width = width;
+        this.height = _PixelGrid.grid_canvas.height = height;
+        this.grid_context = this.grid_canvas.getContext("2d");
+        this.grid_context.imageSmoothingEnabled = false;
+        this.sync_blocks();
         this.render();
       }
       static left() {
@@ -11246,21 +11250,29 @@ var init_pixel_grid = __esm({
       static bottom() {
         return this.centre.y + this.height / (2 * this.scale);
       }
-      static initialise_blocks() {
-        const [left, top] = Point.grid(this.left(), this.top()).block_xy();
-        for (let x = left; x < this.right(); x += Block.SIZE) {
-          for (let y = top; y < this.bottom(); y += Block.SIZE) {
+      static sync_blocks() {
+        this.block_point = Point.grid(this.left(), this.top()).block();
+        const [left, top] = this.block_point.xy();
+        let x, y;
+        for (x = left; x < this.right(); x += Block.SIZE) {
+          for (y = top; y < this.bottom(); y += Block.SIZE) {
             const block_point = Point.grid(x, y);
             if (!(block_point.block_id() in Block.blocks)) {
               new Block(block_point);
             }
           }
         }
+        this.block_canvas = new OffscreenCanvas(x - left, y - top);
+        this.block_context = this.block_canvas.getContext("2d");
       }
       static clear() {
-        this.context.clearRect(0, 0, this.width, this.height);
+        this.block_context?.clearRect(0, 0, this.block_canvas.width, this.block_canvas.height);
+        this.grid_context.clearRect(0, 0, this.width, this.height);
       }
       static render() {
+        this.update_hash();
+        this.sync_blocks();
+        this.clear();
         Object.values(Block.blocks).forEach((block) => {
           block.render();
         });
@@ -11269,7 +11281,18 @@ var init_pixel_grid = __esm({
         const x = Math.floor((block.point.x - this.left()) * this.scale);
         const y = Math.floor((block.point.y - this.top()) * this.scale);
         const size = Block.SIZE * this.scale;
-        this.context.drawImage(block.canvas, x, y, size, size);
+        this.block_context.drawImage(
+          block.canvas,
+          block.point.x - this.block_point.x,
+          block.point.y - this.block_point.y
+        );
+        this.grid_context.drawImage(
+          this.block_canvas,
+          Math.floor((this.block_point.x - this.left()) * this.scale),
+          Math.floor((this.block_point.y - this.top()) * this.scale),
+          this.block_canvas.width * this.scale,
+          this.block_canvas.height * this.scale
+        );
         if (DEBUG && block.debug_element) {
           block.debug_element.style.left = `${x + 1}px`;
           block.debug_element.style.top = `${y + 1}px`;
@@ -11282,19 +11305,28 @@ var init_pixel_grid = __esm({
       }
       static move_to(centre) {
         this.centre = centre.grid();
-        this.clear();
-        this.initialise_blocks();
         this.render();
-        this.update_hash();
       }
       static move_by(delta) {
-        this.move_to(this.centre.plus(delta));
+        this.centre = this.centre.plus(delta);
+        this.render();
+      }
+      static set_scale(scale, origin) {
+        scale = Math.max(scale, 1);
+        if (origin) {
+          this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);
+        }
+        this.scale = scale;
+        this.render();
+      }
+      static scale_by(delta, origin) {
+        this.set_scale(this.scale * 1.01 ** -delta, origin);
       }
       static {
         this.timeout = null;
       }
       static update_hash() {
-        const hash = this.centre.hash_id();
+        const hash = this.centre.hash_id(this.scale);
         if (hash !== location.hash) {
           if (this.timeout) clearTimeout(this.timeout);
           this.timeout = setTimeout(() => {
@@ -11319,9 +11351,10 @@ function on_resize(event) {
   PixelGrid.resize();
 }
 function on_hash(event) {
-  const [x, y] = location.hash.slice(1).split(",").map((d) => Number.parseInt(d));
+  const [x, y, s] = location.hash.slice(1).split(",").map((d, i) => i < 2 ? Number.parseInt(d) : Number.parseFloat(d));
   if (![x, y].some(isNaN)) {
     PixelGrid.move_to(Point.grid(x, y));
+    if (!isNaN(s)) PixelGrid.set_scale(s);
   }
 }
 function on_touch(event) {
@@ -11351,11 +11384,17 @@ function on_lift(event) {
 }
 function on_scroll(event) {
   event.preventDefault();
-  const delta = Point.grid(
+  const delta = Point.view(
     event.shiftKey ? event.deltaY : event.deltaX,
-    event.shiftKey ? event.deltaX : event.deltaY
+    event.shiftKey ? event.deltaX : event.deltaY,
+    0
   );
-  PixelGrid.move_by(delta);
+  if (event.ctrlKey || event.metaKey) {
+    const origin = Point.view(event.x, event.y);
+    PixelGrid.scale_by(event.deltaY, origin);
+  } else {
+    PixelGrid.move_by(delta);
+  }
 }
 function on_key(event) {
   switch (event.key) {

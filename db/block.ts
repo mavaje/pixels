@@ -89,7 +89,7 @@ export class Block {
             blocks[block_id] ??= {};
             blocks[block_id][pixel_id] = hex;
 
-            const [px, py] = p.pixel_xy();
+            const [px, py] = p.pixel().xy();
             Block.blocks[block_id]?.set_pixel([px, py], hex);
 
             if (p.equals(p2)) break;

@@ -14,12 +14,12 @@ export class Point {
         if (this.w !== 0) this.w = 1;
     }
 
-    public static grid(x: number, y: number): Point {
-        return new Point(x, y, 1, 'grid');
+    public static grid(x: number, y: number, w: number = 1): Point {
+        return new Point(x, y, w, 'grid');
     }
 
-    public static view(x: number, y: number): Point {
-        return new Point(x, y, 1, 'view');
+    public static view(x: number, y: number, w: number = 1): Point {
+        return new Point(x, y, w, 'view');
     }
 
     public in_context(context: PointContext) {
@@ -59,41 +59,49 @@ export class Point {
         return [this.x, this.y];
     }
 
-    public block_xy(): [number, number] {
-        return [
-            Math.floor(this.x / Block.SIZE) * Block.SIZE,
-            Math.floor(this.y / Block.SIZE) * Block.SIZE,
-        ];
+    public block(): Point {
+        return this.grid()
+            .scale(1 / Block.SIZE)
+            .floor()
+            .scale(Block.SIZE);
     }
 
     public block_id(): string {
-        return this.block_xy()
+        return this.block().xy()
             .map(d => d / Block.SIZE)
             .join(',');
     }
 
-    public pixel_xy(): [number, number] {
-        const [bx, by] = this.block_xy();
-        return [
-            Math.floor(this.x - bx),
-            Math.floor(this.y - by),
-        ];
+    public pixel(): Point {
+        return this.grid().minus(this.block()).floor();
     }
 
     public pixel_id(): string {
-        return this.pixel_xy()
+        return this.pixel().xy()
             .map(d => d.toString(16).padStart(2, '0'))
             .join('');
     }
 
-    public hash_id(): string {
-        return `#${this.grid().floor().xy().join(',')}`;
+    public hash_id(scale?: number): string {
+        return `#${[
+            ...this.grid().floor().xy(),
+            scale.toFixed(2),
+        ].join(',')}`;
     }
 
     public floor(): Point {
         return new Point(
             Math.floor(this.x),
             Math.floor(this.y),
+            this.w,
+            this.context,
+        );
+    }
+
+    public scale(s: number): Point {
+        return new Point(
+            this.x * s,
+            this.y * s,
             this.w,
             this.context,
         );
