@@ -9,7 +9,7 @@ export class Block {
     public static readonly SIZE = 256;
 
     public static readonly PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
-    public static readonly PIXEL_VALUE_FORMAT = /^[0-9a-f]{3}$/;
+    public static readonly PIXEL_VALUE_FORMAT = /^[0-9a-f]{3}|[0-9a-f]{6}$/;
 
     public static blocks: {
         [id: string]: Block;
