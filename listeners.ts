@@ -77,17 +77,19 @@ function on_scroll(event: WheelEvent) {
 function on_key(event: KeyboardEvent) {
     switch (event.key) {
         case 'ArrowLeft':
-            PixelGrid.move_by(Point.grid(-1, 0));
+            PixelGrid.move_by(Point.view(-16, 0, 0));
             return;
         case 'ArrowRight':
-            PixelGrid.move_by(Point.grid(1, 0));
+            PixelGrid.move_by(Point.view(16, 0, 0));
             return;
         case 'ArrowUp':
-            PixelGrid.move_by(Point.grid(0, -1));
+            PixelGrid.move_by(Point.view(0, -16, 0));
             return;
         case 'ArrowDown':
-            PixelGrid.move_by(Point.grid(0, 1));
+            PixelGrid.move_by(Point.view(0, 16, 0));
             return;
+        default:
+            console.log(event.key);
     }
 }
 
