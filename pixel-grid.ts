@@ -1,5 +1,6 @@
 import {Block} from "./db/block";
 import {Point} from "./point";
+import {DEBUG} from "./config";
 
 export class PixelGrid {
 
@@ -11,6 +12,8 @@ export class PixelGrid {
 
     private static canvas: HTMLCanvasElement = document.getElementById('pixel-grid') as HTMLCanvasElement;
     private static context: CanvasRenderingContext2D;
+
+    private static debug_layer = document.getElementById('debug-layer');
 
     static resize() {
         const {width, height} = document.body.getBoundingClientRect();
@@ -56,7 +59,9 @@ export class PixelGrid {
     }
 
     static render() {
-        Object.values(Block.blocks).forEach(block => block.render());
+        Object.values(Block.blocks).forEach(block => {
+            block.render();
+        });
     }
 
     static render_block(block: Block): void {
@@ -64,6 +69,17 @@ export class PixelGrid {
         const y = Math.floor((block.point.y - this.top()) * this.scale);
         const size = Block.SIZE * this.scale;
         this.context.drawImage(block.canvas, x, y, size, size);
+
+        if (DEBUG && block.debug_element) {
+            block.debug_element.style.left = `${x + 1}px`;
+            block.debug_element.style.top = `${y + 1}px`;
+            block.debug_element.style.width = `${size - 2}px`;
+            block.debug_element.style.height = `${size - 2}px`;
+
+            if (!block.debug_element.isConnected) {
+                this.debug_layer.append(block.debug_element);
+            }
+        }
     }
 
     static move_to(centre: Point) {

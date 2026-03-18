@@ -2,6 +2,7 @@ import {onValue, ref, Unsubscribe, update} from "@firebase/database";
 import {db} from "./db";
 import {PixelGrid} from "../pixel-grid";
 import {Point} from "../point";
+import {DEBUG} from "../config";
 
 export class Block {
 
@@ -16,12 +17,14 @@ export class Block {
 
     public canvas = new OffscreenCanvas(Block.SIZE, Block.SIZE);
 
+    public debug_element: HTMLDivElement;
+
     unsubscribe: Unsubscribe;
 
     constructor(
         public point: Point,
     ) {
-        console.log(`init ${this.point.block_id()}`);
+        // console.log(`init ${this.point.block_id()}`);
 
         const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), snapshot => {
             const pixels: Record<string, string> = snapshot.val();
@@ -44,6 +47,18 @@ export class Block {
         this.unsubscribe = () => {
             unsubscribe_db_listener();
             delete Block.blocks[this.point.block_id()];
+            this.debug_element?.remove();
+        }
+
+        if (DEBUG) {
+            this.debug_element = document.createElement('div')
+            this.debug_element.id = `block:${this.point.block_id()}`;
+            this.debug_element.classList.add('block');
+
+            const label = document.createElement('div');
+            label.classList.add('label');
+            label.innerText = this.point.block_id();
+            this.debug_element.append(label);
         }
     }
 
@@ -113,14 +128,17 @@ export class Block {
             this.point.y < PixelGrid.bottom()
         ) {
             PixelGrid.render_block(this);
-        } else if (
-            this.point.x + Block.SIZE + buffer < PixelGrid.left() ||
-            this.point.x - buffer > PixelGrid.right() ||
-            this.point.y + Block.SIZE + buffer < PixelGrid.top() ||
-            this.point.y - buffer > PixelGrid.bottom()
-        ) {
-            console.log(`unsub ${this.point.block_id()}`);
-            this.unsubscribe();
+        } else {
+            this.debug_element?.remove();
+            if (
+                this.point.x + Block.SIZE + buffer < PixelGrid.left() ||
+                this.point.x - buffer > PixelGrid.right() ||
+                this.point.y + Block.SIZE + buffer < PixelGrid.top() ||
+                this.point.y - buffer > PixelGrid.bottom()
+            ) {
+                // console.log(`unsub ${this.point.block_id()}`);
+                this.unsubscribe();
+            }
         }
     }
 }

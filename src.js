@@ -6944,15 +6944,15 @@ var init_index_esm5 = __esm({
         }
       }
       sendGet_(index) {
-        const get2 = this.outstandingGets_[index];
-        this.sendRequest("g", get2.request, (message) => {
+        const get = this.outstandingGets_[index];
+        this.sendRequest("g", get.request, (message) => {
           delete this.outstandingGets_[index];
           this.outstandingGetCount_--;
           if (this.outstandingGetCount_ === 0) {
             this.outstandingGets_ = [];
           }
-          if (get2.onComplete) {
-            get2.onComplete(message);
+          if (get.onComplete) {
+            get.onComplete(message);
           }
         });
       }
@@ -10970,6 +10970,14 @@ var init_db = __esm({
   }
 });
 
+// config.ts
+var DEBUG;
+var init_config = __esm({
+  "config.ts"() {
+    DEBUG = false;
+  }
+});
+
 // db/block.ts
 var Block;
 var init_block = __esm({
@@ -10977,11 +10985,11 @@ var init_block = __esm({
     init_index_esm5();
     init_db();
     init_pixel_grid();
+    init_config();
     Block = class _Block {
       constructor(point) {
         this.point = point;
         this.canvas = new OffscreenCanvas(_Block.SIZE, _Block.SIZE);
-        console.log(`init ${this.point.block_id()}`);
         const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), (snapshot) => {
           const pixels = snapshot.val();
           if (!pixels || !(typeof pixels === "object")) return;
@@ -10998,7 +11006,17 @@ var init_block = __esm({
         this.unsubscribe = () => {
           unsubscribe_db_listener();
           delete _Block.blocks[this.point.block_id()];
+          this.debug_element?.remove();
         };
+        if (DEBUG) {
+          this.debug_element = document.createElement("div");
+          this.debug_element.id = `block:${this.point.block_id()}`;
+          this.debug_element.classList.add("block");
+          const label = document.createElement("div");
+          label.classList.add("label");
+          label.innerText = this.point.block_id();
+          this.debug_element.append(label);
+        }
       }
       static {
         this.SIZE = 256;
@@ -11055,9 +11073,11 @@ var init_block = __esm({
         const buffer = _Block.SIZE;
         if (this.point.x + _Block.SIZE > PixelGrid.left() && this.point.x < PixelGrid.right() && this.point.y + _Block.SIZE > PixelGrid.top() && this.point.y < PixelGrid.bottom()) {
           PixelGrid.render_block(this);
-        } else if (this.point.x + _Block.SIZE + buffer < PixelGrid.left() || this.point.x - buffer > PixelGrid.right() || this.point.y + _Block.SIZE + buffer < PixelGrid.top() || this.point.y - buffer > PixelGrid.bottom()) {
-          console.log(`unsub ${this.point.block_id()}`);
-          this.unsubscribe();
+        } else {
+          this.debug_element?.remove();
+          if (this.point.x + _Block.SIZE + buffer < PixelGrid.left() || this.point.x - buffer > PixelGrid.right() || this.point.y + _Block.SIZE + buffer < PixelGrid.top() || this.point.y - buffer > PixelGrid.bottom()) {
+            this.unsubscribe();
+          }
         }
       }
     };
@@ -11185,6 +11205,7 @@ var init_pixel_grid = __esm({
   "pixel-grid.ts"() {
     init_block();
     init_point();
+    init_config();
     PixelGrid = class _PixelGrid {
       static {
         this.centre = Point.grid(0, 0);
@@ -11200,6 +11221,9 @@ var init_pixel_grid = __esm({
       }
       static {
         this.canvas = document.getElementById("pixel-grid");
+      }
+      static {
+        this.debug_layer = document.getElementById("debug-layer");
       }
       static resize() {
         const { width, height } = document.body.getBoundingClientRect();
@@ -11237,13 +11261,24 @@ var init_pixel_grid = __esm({
         this.context.clearRect(0, 0, this.width, this.height);
       }
       static render() {
-        Object.values(Block.blocks).forEach((block) => block.render());
+        Object.values(Block.blocks).forEach((block) => {
+          block.render();
+        });
       }
       static render_block(block) {
         const x = Math.floor((block.point.x - this.left()) * this.scale);
         const y = Math.floor((block.point.y - this.top()) * this.scale);
         const size = Block.SIZE * this.scale;
         this.context.drawImage(block.canvas, x, y, size, size);
+        if (DEBUG && block.debug_element) {
+          block.debug_element.style.left = `${x + 1}px`;
+          block.debug_element.style.top = `${y + 1}px`;
+          block.debug_element.style.width = `${size - 2}px`;
+          block.debug_element.style.height = `${size - 2}px`;
+          if (!block.debug_element.isConnected) {
+            this.debug_layer.append(block.debug_element);
+          }
+        }
       }
       static move_to(centre) {
         this.centre = centre.grid();
