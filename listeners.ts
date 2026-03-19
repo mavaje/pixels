@@ -2,6 +2,7 @@ import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
 import {Block} from "./db/block";
 import {Palette} from "./palette";
+import {Picker} from "./picker";
 
 function on_resize(event?: UIEvent) {
     PixelGrid.resize();
@@ -21,7 +22,7 @@ function on_hash(event?: HashChangeEvent) {
 }
 
 let is_touching = false;
-let is_drawing = false;
+let drawing_button = null;
 let initial_point: Point = null;
 let last_point: Point = null;
 
@@ -33,20 +34,22 @@ function on_touch(event: PointerEvent) {
 
     if (event.ctrlKey || event.metaKey) {
 
-    } else {
-        is_drawing = true;
-        Block.draw_line(last_point, last_point, Palette.current_colour);
+    } else if ([0, 1, 2].includes(event.button)) {
+        drawing_button = event.button;
+        Block.draw_line(last_point, last_point, Palette.get_hex(drawing_button));
     }
+
+    Picker.set_editing(null);
 }
 
-function on_drag(event: PointerEvent) {
+function on_move(event: PointerEvent) {
     const point = Point.view(event.x, event.y);
 
     if (is_touching) {
         if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else {
-            if (is_drawing) Block.draw_line(last_point, point, Palette.current_colour);
+            if (drawing_button !== null) Block.draw_line(last_point, point, Palette.get_hex(drawing_button));
         }
     }
 
@@ -55,7 +58,7 @@ function on_drag(event: PointerEvent) {
 
 function on_lift(event: PointerEvent) {
     is_touching = false;
-    is_drawing = false;
+    drawing_button = false;
 }
 
 function on_scroll(event: WheelEvent) {
@@ -99,13 +102,14 @@ export function register_listeners() {
     window.addEventListener('hashchange', on_hash);
 
     PixelGrid.canvas.addEventListener('pointerdown', on_touch);
-    document.addEventListener('pointermove', on_drag);
+    document.addEventListener('pointermove', on_move);
     document.addEventListener('pointerup', on_lift);
     document.addEventListener('pointercancel', on_lift);
-    document.addEventListener('contextmenu', on_lift);
     PixelGrid.canvas.addEventListener('wheel', on_scroll, {passive: false});
 
     document.addEventListener('keydown', on_key);
+
+    document.addEventListener('contextmenu', event => event.preventDefault(), {passive: false});
 
     on_resize();
     on_hash();

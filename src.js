@@ -11360,6 +11360,242 @@ var init_pixel_grid = __esm({
   }
 });
 
+// colour.ts
+var Colour;
+var init_colour = __esm({
+  "colour.ts"() {
+    Colour = class _Colour {
+      static hex_to_rgb(hex) {
+        hex = hex.replace(/[^\da-f]/gi, "");
+        let hexes;
+        if (hex.length < 3) {
+          hexes = [hex, hex, hex];
+        } else if (hex.length < 6) {
+          hexes = [0, 1, 2].map((i) => hex[i].repeat(2));
+        } else {
+          hexes = [0, 2, 4].map((i) => hex.slice(i, i + 2));
+        }
+        const [r, g, b] = hexes.map((x) => (Number.parseInt(x, 16) || 0) / 255);
+        return { r, g, b };
+      }
+      static rgb_to_hex({ r, g, b }) {
+        return "#" + [r, g, b].map((v) => Math.max(0, Math.min(Math.floor(v * 256), 255))).map((b2) => b2.toString(16).padStart(2, "0")).join("");
+      }
+      static rgb_to_hsl({ r, g, b }) {
+        const min = Math.min(r, g, b);
+        const max = Math.max(r, g, b);
+        const range = max - min;
+        const l = (min + max) / 2;
+        const scale = 1 - Math.abs(2 * l - 1);
+        const s = scale > 0 ? range / scale : 0;
+        const h = min === max ? 0 : {
+          [r]: (g - b) / (6 * range) + 1,
+          [g]: (b - r) / (6 * range) + 1 / 3,
+          [b]: (r - g) / (6 * range) + 2 / 3
+        }[max] % 1;
+        return { h, s, l };
+      }
+      static hsl_to_rgb({ h, s, l }) {
+        const c = s * (1 - Math.abs(2 * l - 1));
+        const x = c * (1 - Math.abs(6 * h % 2 - 1));
+        const min = l - c / 2;
+        const mid = min + x;
+        const max = min + c;
+        return [
+          { r: max, g: mid, b: min },
+          { r: mid, g: max, b: min },
+          { r: min, g: max, b: mid },
+          { r: min, g: mid, b: max },
+          { r: mid, g: min, b: max },
+          { r: max, g: min, b: mid }
+        ][Math.floor(h % 1 * 6)];
+      }
+      static hex_to_hsl(hex) {
+        return _Colour.rgb_to_hsl(_Colour.hex_to_rgb(hex));
+      }
+      static hsl_to_hex(hsl) {
+        return _Colour.rgb_to_hex(_Colour.hsl_to_rgb(hsl));
+      }
+    };
+  }
+});
+
+// slider.ts
+var Slider;
+var init_slider = __esm({
+  "slider.ts"() {
+    init_colour();
+    init_picker();
+    Slider = class {
+      constructor(id, space, key) {
+        this.space = space;
+        this.key = key;
+        this.element = document.getElementById(id);
+        this.knob = document.createElement("div");
+        this.knob.classList.add("knob");
+        this.element.append(this.knob);
+        let dragging = false;
+        this.element.addEventListener("pointerdown", (event) => {
+          dragging = true;
+          this.on_slide(event);
+        });
+        document.addEventListener("pointermove", (event) => {
+          if (dragging) this.on_slide(event, false);
+        });
+        document.addEventListener("pointerup", () => dragging = false);
+        document.addEventListener("pointercancel", () => dragging = false);
+      }
+      set_value(hex, animate = true, move = true) {
+        let value;
+        let stops;
+        switch (this.space) {
+          case "rgb":
+            const rgb = Colour.hex_to_rgb(hex);
+            value = rgb[this.key];
+            const min_rgb = { ...rgb, [this.key]: 0 };
+            const max_rgb = { ...rgb, [this.key]: 1 };
+            stops = [
+              Colour.rgb_to_hex(min_rgb),
+              Colour.rgb_to_hex(max_rgb)
+            ];
+            break;
+          case "hsl":
+            const hsl = Colour.hex_to_hsl(hex);
+            value = hsl[this.key];
+            stops = {
+              h: [0, 1, 2, 3, 4, 5, 6].map((v) => v / 6),
+              s: [0, 1],
+              l: [0, 0.5, 1]
+            }[this.key].map((v) => ({ ...hsl, [this.key]: v })).map(Colour.hsl_to_hex);
+            break;
+        }
+        this.element.classList.toggle("animate", animate);
+        this.element.style.setProperty("--stops", stops.join(","));
+        this.knob.style.background = hex;
+        if (move) this.knob.style.setProperty("--value", String(value));
+      }
+      on_slide(event, animate = true) {
+        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 324;
+        value = Math.min(Math.max(value, 0), 1);
+        const hex = {
+          rgb: Colour.rgb_to_hex({ ...Picker.rgb, [this.key]: value }),
+          hsl: Colour.hsl_to_hex({ ...Picker.hsl, [this.key]: value })
+        }[this.space];
+        Picker.element.classList.add("animate");
+        this.element.classList.toggle("animate", animate);
+        this.knob.style.background = hex;
+        this.knob.style.setProperty("--value", String(value));
+        Picker.set_hex(hex, animate);
+        Picker.sliders.forEach((slider) => {
+          if (this !== slider) {
+            slider.set_value(hex, animate, this.space !== slider.space);
+          }
+        });
+      }
+    };
+  }
+});
+
+// picker.ts
+var picker_exports = {};
+__export(picker_exports, {
+  Picker: () => Picker
+});
+var Picker;
+var init_picker = __esm({
+  "picker.ts"() {
+    init_slider();
+    init_colour();
+    Picker = class _Picker {
+      static {
+        this.element = document.getElementById("picker");
+      }
+      static {
+        this.pip = null;
+      }
+      static {
+        this.sliders = [];
+      }
+      static initialise() {
+        this.sliders.push(new Slider("slider-r", "rgb", "r"));
+        this.sliders.push(new Slider("slider-g", "rgb", "g"));
+        this.sliders.push(new Slider("slider-b", "rgb", "b"));
+        this.sliders.push(new Slider("slider-h", "hsl", "h"));
+        this.sliders.push(new Slider("slider-s", "hsl", "s"));
+        this.sliders.push(new Slider("slider-l", "hsl", "l"));
+      }
+      static set_editing(pip) {
+        this.element.classList.toggle("animate", !!this.pip);
+        this.pip?.editing(false);
+        this.pip = pip;
+        this.pip?.editing(true);
+        this.element.classList.toggle("hidden", !pip);
+        if (pip) {
+          this.rgb = Colour.hex_to_rgb(pip.hex);
+          this.hsl = Colour.hex_to_hsl(pip.hex);
+          this.sliders.forEach((slider) => slider.set_value(pip.hex));
+        }
+      }
+      static set_hex(hex, animate = true) {
+        _Picker.pip.set_hex(hex, animate);
+        this.rgb = Colour.hex_to_rgb(hex);
+        this.hsl = Colour.hex_to_hsl(hex);
+      }
+    };
+  }
+});
+
+// pip.ts
+var Pip;
+var init_pip = __esm({
+  "pip.ts"() {
+    init_palette();
+    init_picker();
+    Pip = class {
+      constructor(hex) {
+        this.hex = hex;
+        this.element = document.createElement("div");
+        this.element.classList.add("pip");
+        this.set_hex(hex);
+        let clicked = false;
+        this.element.addEventListener("pointerdown", (event) => {
+          clicked = true;
+          event.preventDefault();
+        }, { passive: false });
+        this.element.addEventListener("pointerup", (event) => {
+          if (clicked && [0, 1, 2].includes(event.button)) {
+            Palette.set_active(this, event.button);
+            Picker.set_editing(Picker.pip === this ? null : this);
+            event.preventDefault();
+          }
+          clicked = false;
+        }, { passive: false });
+        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
+      }
+      set_hex(hex, animate = true) {
+        this.hex = hex;
+        this.element.classList.toggle("animate", animate);
+        this.element.style.setProperty("--hex", hex);
+      }
+      deactivate() {
+        this.element.classList.remove(
+          "active",
+          "button-0",
+          "button-1",
+          "button-2"
+        );
+      }
+      activate(button = null) {
+        this.element.classList.add("active");
+        if (button !== null) this.element.classList.add(`button-${button}`);
+      }
+      editing(editing) {
+        this.element.classList.toggle("editing", editing);
+      }
+    };
+  }
+});
+
 // palette.ts
 var palette_exports = {};
 __export(palette_exports, {
@@ -11368,34 +11604,48 @@ __export(palette_exports, {
 var Palette;
 var init_palette = __esm({
   "palette.ts"() {
-    Palette = class {
+    init_pip();
+    Palette = class _Palette {
       static {
         this.element = document.getElementById("palette");
       }
       static {
-        this.colour_pips = [];
+        this.pips = [];
       }
       static {
-        this.current_colour = "#000000";
+        this.active = [];
       }
       static initialise() {
         this.add_colour_pip("#000000");
+        this.add_colour_pip("#ffffff");
         this.add_colour_pip("#ff0000");
+        this.add_colour_pip("#ff7f00");
         this.add_colour_pip("#ffff00");
         this.add_colour_pip("#00ff00");
         this.add_colour_pip("#00ffff");
+        this.add_colour_pip("#007fff");
         this.add_colour_pip("#0000ff");
         this.add_colour_pip("#ff00ff");
-        this.add_colour_pip("#ffffff");
+        this.set_active(this.pips[0], 0);
       }
       static add_colour_pip(hex) {
-        const pip = document.createElement("div");
-        pip.classList.add("pip");
-        pip.style.background = hex;
-        pip.addEventListener("click", () => {
-          this.current_colour = hex;
+        const pip = new Pip(hex);
+        this.pips.push(pip);
+        this.element.append(pip.element);
+      }
+      static get_hex(button) {
+        return (this.active[button] ?? this.pips[0]).hex;
+      }
+      static set_active(pip, button) {
+        _Palette.active[button] = pip;
+        this.update_pips();
+      }
+      static update_pips() {
+        this.pips.forEach((pip) => pip.deactivate());
+        const show_button = new Set(_Palette.active.filter(Boolean)).size > 1;
+        _Palette.active.forEach((pip, i) => {
+          pip?.activate(show_button ? i : null);
         });
-        this.element.append(pip);
       }
     };
   }
@@ -11421,25 +11671,26 @@ function on_touch(event) {
   initial_point = PixelGrid.centre.plus(last_point).view();
   is_touching = true;
   if (event.ctrlKey || event.metaKey) {
-  } else {
-    is_drawing = true;
-    Block.draw_line(last_point, last_point, Palette.current_colour);
+  } else if ([0, 1, 2].includes(event.button)) {
+    drawing_button = event.button;
+    Block.draw_line(last_point, last_point, Palette.get_hex(drawing_button));
   }
+  Picker.set_editing(null);
 }
-function on_drag(event) {
+function on_move(event) {
   const point = Point.view(event.x, event.y);
   if (is_touching) {
     if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
     } else {
-      if (is_drawing) Block.draw_line(last_point, point, Palette.current_colour);
+      if (drawing_button !== null) Block.draw_line(last_point, point, Palette.get_hex(drawing_button));
     }
   }
   last_point = point;
 }
 function on_lift(event) {
   is_touching = false;
-  is_drawing = false;
+  drawing_button = false;
 }
 function on_scroll(event) {
   event.preventDefault();
@@ -11477,24 +11728,25 @@ function register_listeners() {
   window.addEventListener("resize", on_resize);
   window.addEventListener("hashchange", on_hash);
   PixelGrid.canvas.addEventListener("pointerdown", on_touch);
-  document.addEventListener("pointermove", on_drag);
+  document.addEventListener("pointermove", on_move);
   document.addEventListener("pointerup", on_lift);
   document.addEventListener("pointercancel", on_lift);
-  document.addEventListener("contextmenu", on_lift);
   PixelGrid.canvas.addEventListener("wheel", on_scroll, { passive: false });
   document.addEventListener("keydown", on_key);
+  document.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
   on_resize();
   on_hash();
 }
-var is_touching, is_drawing, initial_point, last_point;
+var is_touching, drawing_button, initial_point, last_point;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
     init_point();
     init_block();
     init_palette();
+    init_picker();
     is_touching = false;
-    is_drawing = false;
+    drawing_button = null;
     initial_point = null;
     last_point = null;
   }
@@ -11506,8 +11758,10 @@ var require_main = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     var listeners_1 = (init_listeners(), __toCommonJS(listeners_exports));
     var palette_1 = (init_palette(), __toCommonJS(palette_exports));
+    var picker_1 = (init_picker(), __toCommonJS(picker_exports));
     (0, listeners_1.register_listeners)();
     palette_1.Palette.initialise();
+    picker_1.Picker.initialise();
   }
 });
 export default require_main();

@@ -1,3 +1,17 @@
+@property --stops {
+    syntax: '<color>#';
+    inherits: true;
+    initial-value: transparent;
+}
+
+*,
+*::before,
+*::after {
+    transition-property: none;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
 html, body {
     height: 100%;
     width: 100%;
@@ -43,12 +57,96 @@ canvas#pixel-grid {
 }
 
 #palette .pip {
-    width: 24px;
-    height: 24px;
+    --hex: transparent;
+    position: relative;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+}
+
+#palette .pip::before {
+    position: absolute;
+    content: '';
+    top: 8px;
+    left: 8px;
+    width: 16px;
+    height: 16px;
+    background-color: var(--hex);
     border: 2px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
-    margin: 4px;
+    transform: rotate(45deg);
+    transition-property: top, left, width, height, border-radius;
+}
+
+#palette .pip.animate::before {
+    transition-property: top, left, width, height, border-radius, background-color;
+}
+
+#palette .pip:hover::before {
+    top: 6px;
+    left: 6px;
+    width: 20px;
+    height: 20px;
+}
+
+#palette .pip.active::before {
+    top: 4px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+}
+
+#palette .pip.editing::before {
+    border-top-left-radius: 4px;
+}
+
+#palette .pip.button-0::after,
+#palette .pip.button-1::after,
+#palette .pip.button-2::after {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: white;
+    color: black;
+    font-size: 10px;
+    font-family: monospace;
+}
+
+#palette .pip.button-1::after {
+    content: 'M';
+    left: 12px;
+    bottom: -2px;
+}
+
+#palette .pip.button-2::after {
+    content: 'R';
+    right: 1px;
+    bottom: 1px;
+}
+
+#palette .pip.button-0::after {
+    content: 'L';
+    left: 1px;
+    bottom: 1px;
+}
+
+#picker {
+    position: absolute;
+    bottom: 54px;
+    right: 4px;
+    display: flex;
+    flex-direction: column;
+    transition-property: opacity;
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .glass {
@@ -64,4 +162,44 @@ canvas#pixel-grid {
         background: #7f7f7f7f;
         backdrop-filter: blur(8px);
     }
+}
+
+.slider {
+    position: relative;
+    width: 332px;
+    height: 8px;
+    padding: 14px;
+    cursor: pointer;
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 332px;
+    height: 8px;
+    margin: 14px;
+    border-radius: 4px;
+    background-image: linear-gradient(to right, var(--stops));
+}
+
+.slider .knob {
+    --value: 0;
+    position: absolute;
+    top: 4px;
+    left: calc((100% - 36px) * var(--value) + 4px);
+    width: 24px;
+    height: 24px;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px #0000007f;
+}
+
+.animate .slider.animate {
+    transition-property: --stops;
+}
+
+.animate .slider.animate .knob {
+    transition-property: left, background-color;
 }
