@@ -92,6 +92,19 @@ function on_key(event: KeyboardEvent) {
         case 'ArrowDown':
             PixelGrid.move_by(Point.view(0, 16, 0));
             return;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case '0':
+            const index = (Number.parseInt(event.key) + 9) % 10;
+            Palette.set_active(Palette.pips[index], 0);
+            return;
         default:
             console.log(event.key);
     }
