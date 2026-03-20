@@ -71,18 +71,27 @@ export class Slider<S extends ColourSpace = ColourSpace> {
             - 18) / 324;
         value = Math.min(Math.max(value, 0), 1);
 
-        const hex = {
-            rgb: Colour.rgb_to_hex({...Picker.rgb, [this.key]: value}),
-            hsl: Colour.hsl_to_hex({...Picker.hsl, [this.key]: value}),
-        }[this.space as string];
+        let hex: string;
+        switch (this.space) {
+            case 'rgb':
+                const rgb = {...Picker.rgb, [this.key]: value};
+                hex = Colour.rgb_to_hex(rgb);
+                Picker.set_hex(hex, animate);
+                Picker.rgb = rgb;
+                break;
+            case 'hsl':
+                const hsl = {...Picker.hsl, [this.key]: value};
+                hex = Colour.hsl_to_hex(hsl);
+                Picker.set_hex(hex, animate);
+                Picker.hsl = hsl;
+                break;
+        }
 
         Picker.element.classList.add('animate');
 
         this.element.classList.toggle('animate', animate);
         this.knob.style.background = hex;
         this.knob.style.setProperty('--value', String(value));
-
-        Picker.set_hex(hex, animate);
 
         Picker.sliders.forEach(slider => {
             if (this !== slider) {

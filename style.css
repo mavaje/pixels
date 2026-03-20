@@ -1,3 +1,15 @@
+@property --x {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --size {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 0;
+}
+
 @property --stops {
     syntax: '<color>#';
     inherits: true;
@@ -10,6 +22,7 @@
     transition-property: none;
     transition-duration: 0.2s;
     transition-timing-function: ease;
+    user-select: none;
 }
 
 html, body {
@@ -45,7 +58,6 @@ canvas#pixel-grid {
     top: 4px;
     left: 4px;
     margin: 4px;
-    user-select: none;
 }
 
 #palette {
@@ -58,10 +70,15 @@ canvas#pixel-grid {
 
 #palette .pip {
     --hex: transparent;
+    --x: 0;
     position: relative;
     width: 36px;
     height: 36px;
     cursor: pointer;
+}
+
+#palette .pip.animated {
+    transition-property: --x;
 }
 
 #palette .pip::before {
@@ -75,7 +92,7 @@ canvas#pixel-grid {
     border: 2px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
-    transform: rotate(45deg);
+    transform: translate(var(--x), 0) rotate(45deg);
     transition-property: top, left, width, height, border-radius;
 }
 
@@ -83,13 +100,15 @@ canvas#pixel-grid {
     transition-property: top, left, width, height, border-radius, background-color;
 }
 
-#palette .pip:hover::before {
+#palette:not(:has(.pip.dragging)) .pip:hover::before,
+#palette .pip.dragging::before {
     top: 6px;
     left: 6px;
     width: 20px;
     height: 20px;
 }
 
+#palette:not(:has(.pip.dragging)) .pip.active::before,
 #palette .pip.active::before {
     top: 4px;
     left: 4px;
@@ -144,6 +163,51 @@ canvas#pixel-grid {
     transition-property: opacity;
 }
 
+.slider {
+    position: relative;
+    width: 360px;
+    height: 36px;
+    cursor: pointer;
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 10px;
+    border-radius: 8px;
+    background-image: linear-gradient(to right, var(--stops));
+}
+
+.slider .knob {
+    --size: 16px;
+    --value: 0;
+    position: absolute;
+    top: calc(16px - var(--size) / 2);
+    left: calc((100% - 36px) * var(--value) + 16px - var(--size) / 2);
+    width: var(--size);
+    height: var(--size);
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px #0000007f;
+    transition-property: --size;
+}
+
+.slider:hover .knob {
+    --size: 20px;
+}
+
+.animate .slider.animate {
+    transition-property: --stops;
+}
+
+.animate .slider.animate .knob {
+    transition-property: --size, left, background-color;
+}
+
 .hidden {
     opacity: 0;
     pointer-events: none;
@@ -164,42 +228,23 @@ canvas#pixel-grid {
     }
 }
 
-.slider {
-    position: relative;
-    width: 332px;
-    height: 8px;
-    padding: 14px;
-    cursor: pointer;
+input {
+    background: #0000007f;
+    outline: none;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-family: monospace;
+    text-transform: uppercase;
+    height: 20px;
+    margin: 8px;
+    padding: 0 4px;
+    transition-property: border, box-shadow;
 }
 
-.slider::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 332px;
-    height: 8px;
-    margin: 14px;
-    border-radius: 4px;
-    background-image: linear-gradient(to right, var(--stops));
-}
-
-.slider .knob {
-    --value: 0;
-    position: absolute;
-    top: 4px;
-    left: calc((100% - 36px) * var(--value) + 4px);
-    width: 24px;
-    height: 24px;
+input:hover,
+input:focus-visible {
     border: 2px solid white;
-    border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
-}
-
-.animate .slider.animate {
-    transition-property: --stops;
-}
-
-.animate .slider.animate .knob {
-    transition-property: left, background-color;
 }

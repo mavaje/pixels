@@ -6,17 +6,31 @@ export type HSL = {h: number, s: number, l: number};
 
 export class Colour {
 
-    static hex_to_rgb(hex: string): RGB {
+    static clean_hex(hex: string, hash: boolean = false) {
+        if (hash) return '#' + this.clean_hex(hex, false);
         hex = hex.replace(/[^\da-f]/gi, '');
-        let hexes: string[];
-        if (hex.length < 3) {
-            hexes = [hex, hex, hex];
-        } else if (hex.length < 6) {
-            hexes = [0, 1, 2].map(i => hex[i].repeat(2));
-        } else {
-            hexes = [0, 2, 4].map(i => hex.slice(i, i + 2));
+        switch (hex.length) {
+            case 0:
+                return '000000';
+            case 1:
+                return hex.repeat(6);
+            case 2:
+                return hex.repeat(3);
+            case 3:
+            case 4:
+            case 5:
+                const [r, g, b] = hex;
+                return r + r + g + g + b + b;
+            default:
+                return hex.slice(0, 6);
         }
-        const [r, g, b] = hexes.map(x => (Number.parseInt(x, 16) || 0) / 255);
+    }
+
+    static hex_to_rgb(hex: string): RGB {
+        hex = this.clean_hex(hex);
+        const [r, g, b] = [0, 2, 4]
+            .map(i => hex.slice(i, i + 2))
+            .map(x => (Number.parseInt(x, 16) || 0) / 255);
         return {r, g, b};
     }
 

@@ -1,4 +1,5 @@
 import {Pip} from "./pip";
+import {Colour} from "./colour";
 
 export class Palette {
 
@@ -9,6 +10,12 @@ export class Palette {
     static active: Pip[] = [];
 
     static initialise() {
+        this.load_cookies();
+        if (this.pips.length === 0) this.load_default_palette();
+        if (this.active.length === 0) this.set_active(this.pips[0], 0);
+    }
+
+    static load_default_palette() {
         this.add_colour_pip('#000000');
         this.add_colour_pip('#ffffff');
         this.add_colour_pip('#ff0000');
@@ -19,8 +26,36 @@ export class Palette {
         this.add_colour_pip('#007fff');
         this.add_colour_pip('#0000ff');
         this.add_colour_pip('#ff00ff');
+    }
 
-        this.set_active(this.pips[0], 0);
+    static load_cookies(): boolean {
+        for (const cookie of document.cookie.split(/;\s*/g)) {
+            const [key, value] = cookie.split('=');
+            switch (key) {
+                case 'palette':
+                    const hexes = value
+                        .split(',')
+                        .map(h => Colour.clean_hex(h, true));
+
+                    for (let i = 0; i < 10; i++) {
+                        this.add_colour_pip(hexes[i] ?? '#000000');
+                    }
+
+                    break;
+
+                case 'buttons':
+                    const indices = value
+                        .split(',')
+                        .map(b => Number.parseInt(b));
+
+                    indices.forEach((index, button) => {
+                        if (!isNaN(index)) {
+                            this.set_active(this.pips[index], button);
+                        }
+                    });
+            }
+        }
+        return false;
     }
 
     static add_colour_pip(hex: string) {
@@ -36,6 +71,7 @@ export class Palette {
     static set_active(pip: Pip, button: number) {
         Palette.active[button] = pip;
         this.update_pips();
+        this.save_button_cookie();
     }
 
     static update_pips() {
@@ -44,5 +80,13 @@ export class Palette {
         Palette.active.forEach((pip, i) => {
             pip?.activate(show_button ? i : null);
         });
+    }
+
+    static save_palette_cookie() {
+        document.cookie = `palette=${this.pips.map(p => p.hex).join(',')}`;
+    }
+
+    static save_button_cookie() {
+        document.cookie = `buttons=${this.active.map(p => this.pips.indexOf(p)).join(',')}`;
     }
 }

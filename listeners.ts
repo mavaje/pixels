@@ -4,6 +4,8 @@ import {Block} from "./db/block";
 import {Palette} from "./palette";
 import {Picker} from "./picker";
 
+const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
+
 function on_resize(event?: UIEvent) {
     PixelGrid.resize();
 }
@@ -16,8 +18,12 @@ function on_hash(event?: HashChangeEvent) {
             ? Number.parseInt(d)
             : Number.parseFloat(d));
     if (![x, y].some(isNaN)) {
-        PixelGrid.move_to(Point.grid(x, y));
-        if (!isNaN(z)) PixelGrid.set_size(z);
+        PixelGrid.centre = Point.grid(x, y);
+        if (!isNaN(z)) {
+            PixelGrid.set_size(z);
+        } else {
+            PixelGrid.render();
+        }
     }
 }
 
@@ -79,6 +85,8 @@ function on_scroll(event: WheelEvent) {
 }
 
 function on_key(event: KeyboardEvent) {
+    if (event.target !== document.body) return;
+
     switch (event.key) {
         case 'ArrowLeft':
             PixelGrid.move_by(Point.view(-16, 0, 0));
@@ -105,8 +113,14 @@ function on_key(event: KeyboardEvent) {
             const index = (Number.parseInt(event.key) + 9) % 10;
             Palette.set_active(Palette.pips[index], 0);
             return;
+        case 's':
+            if (event.ctrlKey || event.metaKey) {
+                download_anchor.href = PixelGrid.canvas.toDataURL();
+                download_anchor.click();
+                event.preventDefault();
+            }
         default:
-            console.log(event.key);
+            // console.log(event.key);
     }
 }
 

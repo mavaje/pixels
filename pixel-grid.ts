@@ -19,9 +19,6 @@ export class PixelGrid {
         const {width, height} = document.body.getBoundingClientRect();
         this.width = width;
         this.height = height;
-
-        this.sync_canvas();
-        this.sync_blocks();
         this.render();
     }
 
@@ -85,7 +82,6 @@ export class PixelGrid {
     }
 
     static render() {
-        this.update_hash();
         this.sync_canvas();
         this.sync_blocks();
         this.clear();
@@ -120,11 +116,11 @@ export class PixelGrid {
     static move_to(centre: Point) {
         this.centre = centre.grid();
         this.render();
+        this.update_hash();
     }
 
     static move_by(delta: Point) {
-        this.centre = this.centre.plus(delta);
-        this.render();
+        this.move_to(this.centre.plus(delta));
     }
 
     static set_scale(scale: number, origin?: Point) {
@@ -138,8 +134,8 @@ export class PixelGrid {
                 .plus(origin);
         }
         this.scale = scale;
-        this.sync_canvas();
         this.render();
+        this.update_hash();
     }
 
     static scale_by(delta: number, origin?: Point) {

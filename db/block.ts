@@ -6,6 +6,7 @@ import {DEBUG} from "../config";
 
 export class Block {
 
+    public static readonly BACKGROUND = 'white';
     public static readonly SIZE = 256;
 
     public static readonly PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
@@ -16,6 +17,7 @@ export class Block {
     } = {};
 
     public canvas = new OffscreenCanvas(Block.SIZE, Block.SIZE);
+    public context = this.canvas.getContext('2d');
 
     public debug_element: HTMLDivElement;
 
@@ -30,6 +32,8 @@ export class Block {
             const pixels: Record<string, string> = snapshot.val();
 
             if (!pixels || !(typeof pixels === 'object')) return;
+
+            this.clear();
 
             Object.entries(pixels).forEach(([id, hex]) => {
                 if (Block.PIXEL_ID_FORMAT.test(id) && Block.PIXEL_VALUE_FORMAT.test(hex)) {
@@ -112,13 +116,17 @@ export class Block {
         }
     }
 
+    clear() {
+        this.context.fillStyle = Block.BACKGROUND;
+        this.context.fillRect(0, 0, Block.SIZE, Block.SIZE);
+    }
+
     set_pixel(
         [x, y]: [number, number],
         hex: string,
     ) {
-        const context = this.canvas.getContext('2d');
-        context.fillStyle = `#${hex}`;
-        context.fillRect(x, y, 1, 1);
+        this.context.fillStyle = `#${hex}`;
+        this.context.fillRect(x, y, 1, 1);
     }
 
     render(): void {

@@ -11,19 +11,72 @@ export class Pip {
         this.set_hex(hex);
 
         let clicked = false;
-        this.element.addEventListener('pointerdown', event => {
-            clicked = true;
-            event.preventDefault();
-        }, {passive: false});
-        this.element.addEventListener('pointerup', event => {
-            if (clicked && [0, 1, 2].includes(event.button)) {
-                Palette.set_active(this, event.button);
-                Picker.set_editing(Picker.pip === this ? null : this);
-                event.preventDefault();
+        let dragged = false;
+        this.element.addEventListener('pointerdown', () => clicked = true);
+        document.addEventListener('pointermove', event => {
+            if (clicked) {
+                const {width} = this.element.getBoundingClientRect();
+                const offset = this.drag_offset(event);
+                if (offset !== 0) {
+                    dragged = true;
+                    this.element.classList.add('dragging');
+                }
+                const index = Palette.pips.indexOf(this);
+                Palette.pips.forEach((pip, i) => {
+                    let x: number;
+                    if (i === index) {
+                        x = offset * width;
+                    } else if ((index + offset) <= i && i < index) {
+                        x = width;
+                    } else if (index < i && i <= (index + offset)) {
+                        x = -width;
+                    } else {
+                        x = 0;
+                    }
+                    pip.element.classList.add('animated');
+                    pip.element.style.setProperty('--x', `${x}px`);
+                });
+            }
+        });
+        document.addEventListener('pointerup', event => {
+            if (dragged) {
+                const offset = this.drag_offset(event);
+                const index = Palette.pips.indexOf(this);
+                if (offset !== 0) {
+                    const next_index = offset < 0
+                        ? index + offset
+                        : index + offset + 1
+                    Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
+
+                    Palette.pips.splice(index, 1);
+                    Palette.pips.splice(index + offset, 0, this);
+
+                    Palette.save_palette_cookie();
+                }
             }
             clicked = false;
+            dragged = false;
+            this.element.style.removeProperty('--x');
+            this.element.classList.remove('animated', 'dragging');
+        });
+        this.element.addEventListener('pointerup', event => {
+            if (clicked) {
+                if (!dragged && [0, 1, 2].includes(event.button)) {
+                    Palette.set_active(this, event.button);
+                    Picker.set_editing(Picker.pip === this ? null : this);
+                }
+                event.preventDefault();
+            }
         }, {passive: false});
         this.element.addEventListener('contextmenu', event => event.preventDefault(), {passive: false});
+    }
+
+    drag_offset(event: PointerEvent): number {
+        const {x, width} = this.element.getBoundingClientRect();
+        const pip_x = x + width / 2;
+        let offset = Math.round((event.x - pip_x) / width);
+        const index = Palette.pips.indexOf(this);
+        return Math.min(Math.max(offset, -index), 9 - index);
     }
 
     set_hex(hex: string, animate = true) {
