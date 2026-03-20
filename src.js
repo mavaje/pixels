@@ -11597,7 +11597,7 @@ var init_pip = __esm({
         this.set_hex(hex);
         let clicked = false;
         let dragged = false;
-        this.element.addEventListener("pointerdown", (event) => clicked = true);
+        this.element.addEventListener("pointerdown", () => clicked = true);
         document.addEventListener("pointermove", (event) => {
           if (clicked) {
             const { width } = this.element.getBoundingClientRect();
@@ -11643,8 +11643,9 @@ var init_pip = __esm({
         this.element.addEventListener("pointerup", (event) => {
           if (clicked) {
             if (!dragged && [0, 1, 2].includes(event.button)) {
+              const open_editor = Picker.pip ? Picker.pip !== this : Palette.active[event.button] === this;
+              Picker.set_editing(open_editor ? this : null);
               Palette.set_active(this, event.button);
-              Picker.set_editing(Picker.pip === this ? null : this);
             }
             event.preventDefault();
           }
