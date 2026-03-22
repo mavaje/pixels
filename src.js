@@ -11532,7 +11532,7 @@ var init_picker = __esm({
   "picker.ts"() {
     init_slider();
     init_colour();
-    init_palette();
+    init_tool_box();
     Picker = class _Picker {
       static {
         this.element = document.getElementById("picker");
@@ -11576,8 +11576,34 @@ var init_picker = __esm({
         _Picker.pip.set_hex(hex, animate);
         this.rgb = Colour.hex_to_rgb(hex);
         this.hsl = Colour.hex_to_hsl(hex);
-        Palette.save_palette_cookie();
+        ToolBox.save_palette_cookie();
         this.hex_input.value = hex;
+      }
+    };
+  }
+});
+
+// tool.ts
+var Tool;
+var init_tool = __esm({
+  "tool.ts"() {
+    Tool = class {
+      activate(button = null) {
+        this.element.classList.add("active");
+        if (button !== null) {
+          this.element.classList.add(`button-${button}`);
+        }
+      }
+      deactivate() {
+        this.element.classList.remove(
+          "active",
+          "button-0",
+          "button-1",
+          "button-2"
+        );
+      }
+      cursor() {
+        return "auto";
       }
     };
   }
@@ -11587,14 +11613,19 @@ var init_picker = __esm({
 var Pip;
 var init_pip = __esm({
   "pip.ts"() {
-    init_palette();
+    init_tool_box();
     init_picker();
-    Pip = class {
+    init_block();
+    init_tool();
+    Pip = class extends Tool {
       constructor(hex) {
+        super();
         this.hex = hex;
         this.element = document.createElement("div");
         this.element.classList.add("pip");
         this.set_hex(hex);
+      }
+      initialise() {
         let clicked = false;
         let dragged = false;
         this.element.addEventListener("pointerdown", () => clicked = true);
@@ -11606,8 +11637,8 @@ var init_pip = __esm({
               dragged = true;
               this.element.classList.add("dragging");
             }
-            const index = Palette.pips.indexOf(this);
-            Palette.pips.forEach((pip, i) => {
+            const index = ToolBox.pips.indexOf(this);
+            ToolBox.pips.forEach((pip, i) => {
               let x;
               if (i === index) {
                 x = offset * width;
@@ -11626,13 +11657,13 @@ var init_pip = __esm({
         document.addEventListener("pointerup", (event) => {
           if (dragged) {
             const offset = this.drag_offset(event);
-            const index = Palette.pips.indexOf(this);
+            const index = ToolBox.pips.indexOf(this);
             if (offset !== 0) {
               const next_index = offset < 0 ? index + offset : index + offset + 1;
-              Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
-              Palette.pips.splice(index, 1);
-              Palette.pips.splice(index + offset, 0, this);
-              Palette.save_palette_cookie();
+              ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element);
+              ToolBox.pips.splice(index, 1);
+              ToolBox.pips.splice(index + offset, 0, this);
+              ToolBox.save_palette_cookie();
             }
           }
           clicked = false;
@@ -11643,9 +11674,9 @@ var init_pip = __esm({
         this.element.addEventListener("pointerup", (event) => {
           if (clicked) {
             if (!dragged && [0, 1, 2].includes(event.button)) {
-              const open_editor = Picker.pip ? Picker.pip !== this : Palette.active[event.button] === this;
+              const open_editor = Picker.pip ? Picker.pip !== this : ToolBox.active[event.button] === this;
               Picker.set_editing(open_editor ? this : null);
-              Palette.set_active(this, event.button);
+              ToolBox.set_active(this, event.button);
             }
             event.preventDefault();
           }
@@ -11656,7 +11687,7 @@ var init_pip = __esm({
         const { x, width } = this.element.getBoundingClientRect();
         const pip_x = x + width / 2;
         let offset = Math.round((event.x - pip_x) / width);
-        const index = Palette.pips.indexOf(this);
+        const index = ToolBox.pips.indexOf(this);
         return Math.min(Math.max(offset, -index), 9 - index);
       }
       set_hex(hex, animate = true) {
@@ -11664,38 +11695,78 @@ var init_pip = __esm({
         this.element.classList.toggle("animate", animate);
         this.element.style.setProperty("--hex", hex);
       }
-      deactivate() {
-        this.element.classList.remove(
-          "active",
-          "button-0",
-          "button-1",
-          "button-2"
-        );
-      }
-      activate(button = null) {
-        this.element.classList.add("active");
-        if (button !== null) this.element.classList.add(`button-${button}`);
-      }
       editing(editing) {
         this.element.classList.toggle("editing", editing);
+      }
+      on_drag(p1, p2 = p1) {
+        Block.draw_line(p1, p2, this.hex);
+      }
+      cookie_key() {
+        return ToolBox.pips.indexOf(this).toString();
       }
     };
   }
 });
 
-// palette.ts
-var palette_exports = {};
-__export(palette_exports, {
-  Palette: () => Palette
+// pan-tool.ts
+var PanTool, pan_tool;
+var init_pan_tool = __esm({
+  "pan-tool.ts"() {
+    init_tool();
+    init_tool_box();
+    init_pixel_grid();
+    PanTool = class extends Tool {
+      constructor() {
+        super(...arguments);
+        this.element = document.getElementById("pan-tool");
+      }
+      initialise() {
+        this.element.classList.add("animated");
+        let clicked = false;
+        this.element.addEventListener("pointerdown", () => clicked = true);
+        document.addEventListener("pointerup", () => clicked = false);
+        this.element.addEventListener("pointerup", (event) => {
+          if (clicked) {
+            if ([0, 1, 2].includes(event.button)) {
+              ToolBox.set_active(this, event.button);
+            }
+            event.preventDefault();
+          }
+        });
+        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
+      }
+      on_drag(p1, p2) {
+        if (p2) PixelGrid.move_by(p1.view().minus(p2));
+      }
+      cookie_key() {
+        return "pan";
+      }
+      cursor() {
+        return "grab";
+      }
+    };
+    pan_tool = new PanTool();
+  }
 });
-var Palette;
-var init_palette = __esm({
-  "palette.ts"() {
+
+// tool-box.ts
+var tool_box_exports = {};
+__export(tool_box_exports, {
+  ToolBox: () => ToolBox
+});
+var ToolBox;
+var init_tool_box = __esm({
+  "tool-box.ts"() {
     init_pip();
     init_colour();
-    Palette = class _Palette {
+    init_pan_tool();
+    init_pixel_grid();
+    ToolBox = class _ToolBox {
       static {
-        this.element = document.getElementById("palette");
+        this.toolbox = document.getElementById("toolbox");
+      }
+      static {
+        this.add_pip_button = document.getElementById("add-pip");
       }
       static {
         this.pips = [];
@@ -11707,34 +11778,33 @@ var init_palette = __esm({
         this.load_cookies();
         if (this.pips.length === 0) this.load_default_palette();
         if (this.active.length === 0) this.set_active(this.pips[0], 0);
+        pan_tool.initialise();
+        this.add_pip_button.addEventListener("click", () => {
+          this.add_colour_pip("#000000");
+        });
       }
       static load_default_palette() {
         this.add_colour_pip("#000000");
         this.add_colour_pip("#ffffff");
-        this.add_colour_pip("#ff0000");
-        this.add_colour_pip("#ff7f00");
-        this.add_colour_pip("#ffff00");
-        this.add_colour_pip("#00ff00");
-        this.add_colour_pip("#00ffff");
-        this.add_colour_pip("#007fff");
-        this.add_colour_pip("#0000ff");
-        this.add_colour_pip("#ff00ff");
       }
       static load_cookies() {
         for (const cookie of document.cookie.split(/;\s*/g)) {
           const [key, value] = cookie.split("=");
           switch (key) {
             case "palette":
-              const hexes = value.split(",").map((h) => Colour.clean_hex(h, true));
-              for (let i = 0; i < 10; i++) {
-                this.add_colour_pip(hexes[i] ?? "#000000");
-              }
+              value.split(",").map((hex) => Colour.clean_hex(hex, true)).forEach((hex) => {
+                this.add_colour_pip(hex);
+              });
               break;
             case "buttons":
-              const indices = value.split(",").map((b) => Number.parseInt(b));
-              indices.forEach((index, button) => {
-                if (!isNaN(index)) {
-                  this.set_active(this.pips[index], button);
+              value.split(",").forEach((tool, button) => {
+                if (tool === "pan") {
+                  this.set_active(pan_tool, button);
+                } else {
+                  const pip_index = Number.parseInt(tool);
+                  if (!isNaN(pip_index)) {
+                    this.set_active(this.pips[pip_index], button);
+                  }
                 }
               });
           }
@@ -11743,29 +11813,32 @@ var init_palette = __esm({
       }
       static add_colour_pip(hex) {
         const pip = new Pip(hex);
+        pip.initialise();
         this.pips.push(pip);
-        this.element.append(pip.element);
+        this.toolbox.insertBefore(pip.element, this.add_pip_button);
       }
-      static get_hex(button) {
-        return (this.active[button] ?? this.pips[0]).hex;
-      }
-      static set_active(pip, button) {
-        _Palette.active[button] = pip;
-        this.update_pips();
+      static set_active(tool, button) {
+        _ToolBox.active[button] = tool;
+        this.update_tools();
         this.save_button_cookie();
       }
-      static update_pips() {
+      static get_active(button) {
+        return this.active[button] ?? pan_tool;
+      }
+      static update_tools() {
+        pan_tool.deactivate();
         this.pips.forEach((pip) => pip.deactivate());
-        const show_button = new Set(_Palette.active.filter(Boolean)).size > 1;
-        _Palette.active.forEach((pip, i) => {
+        const show_button = new Set(_ToolBox.active.filter(Boolean)).size > 1;
+        _ToolBox.active.forEach((pip, i) => {
           pip?.activate(show_button ? i : null);
         });
+        PixelGrid.canvas.style.cursor = _ToolBox.active[0]?.cursor() ?? "auto";
       }
       static save_palette_cookie() {
         document.cookie = `palette=${this.pips.map((p) => p.hex).join(",")}`;
       }
       static save_button_cookie() {
-        document.cookie = `buttons=${this.active.map((p) => this.pips.indexOf(p)).join(",")}`;
+        document.cookie = `buttons=${this.active.map((p) => p.cookie_key()).join(",")}`;
       }
     };
   }
@@ -11796,8 +11869,8 @@ function on_touch(event) {
   is_touching = true;
   if (event.ctrlKey || event.metaKey) {
   } else if ([0, 1, 2].includes(event.button)) {
-    drawing_button = event.button;
-    Block.draw_line(last_point, last_point, Palette.get_hex(drawing_button));
+    dragging_button = event.button;
+    ToolBox.get_active(event.button).on_drag(last_point);
   }
   Picker.set_editing(null);
 }
@@ -11807,14 +11880,16 @@ function on_move(event) {
     if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
     } else {
-      if (drawing_button !== null) Block.draw_line(last_point, point, Palette.get_hex(drawing_button));
+      if (dragging_button !== null) {
+        ToolBox.get_active(dragging_button).on_drag(last_point, point);
+      }
     }
   }
   last_point = point;
 }
 function on_lift(event) {
   is_touching = false;
-  drawing_button = false;
+  dragging_button = false;
 }
 function on_scroll(event) {
   event.preventDefault();
@@ -11856,7 +11931,7 @@ function on_key(event) {
     case "9":
     case "0":
       const index = (Number.parseInt(event.key) + 9) % 10;
-      Palette.set_active(Palette.pips[index], 0);
+      ToolBox.set_active(ToolBox.pips[index], 0);
       return;
     case "s":
       if (event.ctrlKey || event.metaKey) {
@@ -11880,17 +11955,16 @@ function register_listeners() {
   on_resize();
   on_hash();
 }
-var download_anchor, is_touching, drawing_button, initial_point, last_point;
+var download_anchor, is_touching, dragging_button, initial_point, last_point;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
     init_point();
-    init_block();
-    init_palette();
+    init_tool_box();
     init_picker();
     download_anchor = document.getElementById("downloader");
     is_touching = false;
-    drawing_button = null;
+    dragging_button = null;
     initial_point = null;
     last_point = null;
   }
@@ -11901,10 +11975,10 @@ var require_main = __commonJS({
   "main.js"(exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var listeners_1 = (init_listeners(), __toCommonJS(listeners_exports));
-    var palette_1 = (init_palette(), __toCommonJS(palette_exports));
+    var tool_box_1 = (init_tool_box(), __toCommonJS(tool_box_exports));
     var picker_1 = (init_picker(), __toCommonJS(picker_exports));
     (0, listeners_1.register_listeners)();
-    palette_1.Palette.initialise();
+    tool_box_1.ToolBox.initialise();
     picker_1.Picker.initialise();
   }
 });

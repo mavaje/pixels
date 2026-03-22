@@ -60,7 +60,7 @@ canvas#pixel-grid {
     margin: 4px;
 }
 
-#palette {
+#toolbox {
     position: absolute;
     bottom: 4px;
     right: 4px;
@@ -68,7 +68,97 @@ canvas#pixel-grid {
     flex-direction: row;
 }
 
-#palette .pip {
+.button {
+    --size: 20px;
+    position: relative;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.button:hover {
+    --size: 26px;
+}
+
+.button.active {
+    --size: 32px;
+}
+
+.button.animated {
+    transition-property: --size;
+}
+
+.button::before {
+    content: '';
+    position: absolute;
+    top: calc(18px - var(--size) / 2);
+    left: calc(18px - var(--size) / 2);
+    width: var(--size);
+    height: var(--size);
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px #0000007f;
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+    background-color: black;
+}
+
+.icon-pan {
+    clip-path: polygon(
+        8px 0px,
+        16px 8px,
+        8px 16px,
+        0px 8px,
+        4px 4px,
+        4px 12px,
+        12px 12px,
+        12px 4px,
+        4px 4px
+    );
+}
+
+.icon-add {
+    clip-path: polygon(
+            7px 2px,
+            9px 2px,
+            9px 7px,
+            14px 7px,
+            14px 9px,
+            9px 9px,
+            9px 14px,
+            7px 14px,
+            7px 9px,
+            2px 9px,
+            2px 7px,
+            7px 7px
+    );
+}
+
+.icon-remove {
+    transform: rotate(45deg);
+    clip-path: polygon(
+            7px 2px,
+            9px 2px,
+            9px 7px,
+            14px 7px,
+            14px 9px,
+            9px 9px,
+            9px 14px,
+            7px 14px,
+            7px 9px,
+            2px 9px,
+            2px 7px,
+            7px 7px
+    );
+}
+
+.pip {
     --hex: transparent;
     --x: 0;
     position: relative;
@@ -77,52 +167,46 @@ canvas#pixel-grid {
     cursor: pointer;
 }
 
-#palette .pip.animated {
+.pip.animated {
     transition-property: --x;
 }
 
-#palette .pip::before {
+.pip::before {
+    --size: 16px;
     position: absolute;
     content: '';
-    top: 8px;
-    left: 8px;
-    width: 16px;
-    height: 16px;
+    top: calc(16px - var(--size) / 2);
+    left: calc(16px - var(--size) / 2);
+    width: var(--size);
+    height: var(--size);
     background-color: var(--hex);
     border: 2px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
     transform: translate(var(--x), 0) rotate(45deg);
-    transition-property: top, left, width, height, border-radius;
+    transition-property: --size, border-radius;
 }
 
-#palette .pip.animate::before {
-    transition-property: top, left, width, height, border-radius, background-color;
+.pip.animate::before {
+    transition-property: --size, border-radius, background-color;
 }
 
-#palette:not(:has(.pip.dragging)) .pip:hover::before,
-#palette .pip.dragging::before {
-    top: 6px;
-    left: 6px;
-    width: 20px;
-    height: 20px;
+#toolbox:not(:has(.pip.dragging)) .pip:hover::before,
+.pip.dragging::before {
+    --size: 22px;
 }
 
-#palette:not(:has(.pip.dragging)) .pip.active::before,
-#palette .pip.active::before {
-    top: 4px;
-    left: 4px;
-    width: 24px;
-    height: 24px;
+#toolbox:not(:has(.pip.dragging)) .pip.active::before,
+.pip.active::before {
+    --size: 28px;
 }
 
-#palette .pip.editing::before {
+.pip.editing::before {
     border-top-left-radius: 4px;
 }
 
-#palette .pip.button-0::after,
-#palette .pip.button-1::after,
-#palette .pip.button-2::after {
+#toolbox .button::after,
+#toolbox .pip::after {
     position: absolute;
     display: flex;
     justify-content: center;
@@ -134,21 +218,25 @@ canvas#pixel-grid {
     color: black;
     font-size: 10px;
     font-family: monospace;
+    transform: translate(var(--x), 0);
 }
 
-#palette .pip.button-1::after {
+#toolbox .button.button-1::after,
+#toolbox .pip.button-1::after {
     content: 'M';
     left: 12px;
     bottom: -2px;
 }
 
-#palette .pip.button-2::after {
+#toolbox .button.button-2::after,
+#toolbox .pip.button-2::after {
     content: 'R';
     right: 1px;
     bottom: 1px;
 }
 
-#palette .pip.button-0::after {
+#toolbox .button.button-0::after,
+#toolbox .pip.button-0::after {
     content: 'L';
     left: 1px;
     bottom: 1px;
@@ -161,6 +249,15 @@ canvas#pixel-grid {
     display: flex;
     flex-direction: column;
     transition-property: opacity;
+}
+
+#picker-tools {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#picker-tools .button {
 }
 
 .slider {
@@ -197,7 +294,7 @@ canvas#pixel-grid {
 }
 
 .slider:hover .knob {
-    --size: 20px;
+    --size: 22px;
 }
 
 .animate .slider.animate {
@@ -238,7 +335,7 @@ input {
     font-family: monospace;
     text-transform: uppercase;
     height: 20px;
-    margin: 8px;
+    margin: 6px;
     padding: 0 4px;
     transition-property: border, box-shadow;
 }
@@ -247,4 +344,19 @@ input:hover,
 input:focus-visible {
     border: 2px solid white;
     box-shadow: 0 2px 4px #0000007f;
+}
+
+.hr,
+.vr {
+    background: white;
+    opacity: 50%;
+    margin: 4px;
+}
+
+.hr {
+    height: 2px;
+}
+
+.vr {
+    width: 2px;
 }

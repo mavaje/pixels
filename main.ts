@@ -1,8 +1,8 @@
 import {register_listeners} from "./listeners";
-import {Palette} from "./palette";
+import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
 
 register_listeners();
 
-Palette.initialise();
+ToolBox.initialise();
 Picker.initialise();

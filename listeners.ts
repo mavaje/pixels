@@ -1,7 +1,7 @@
 import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
 import {Block} from "./db/block";
-import {Palette} from "./palette";
+import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
 
 const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
@@ -28,7 +28,7 @@ function on_hash(event?: HashChangeEvent) {
 }
 
 let is_touching = false;
-let drawing_button = null;
+let dragging_button = null;
 let initial_point: Point = null;
 let last_point: Point = null;
 
@@ -41,8 +41,8 @@ function on_touch(event: PointerEvent) {
     if (event.ctrlKey || event.metaKey) {
 
     } else if ([0, 1, 2].includes(event.button)) {
-        drawing_button = event.button;
-        Block.draw_line(last_point, last_point, Palette.get_hex(drawing_button));
+        dragging_button = event.button;
+        ToolBox.get_active(event.button).on_drag(last_point);
     }
 
     Picker.set_editing(null);
@@ -55,7 +55,9 @@ function on_move(event: PointerEvent) {
         if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else {
-            if (drawing_button !== null) Block.draw_line(last_point, point, Palette.get_hex(drawing_button));
+            if (dragging_button !== null) {
+                ToolBox.get_active(dragging_button).on_drag(last_point, point);
+            }
         }
     }
 
@@ -64,7 +66,7 @@ function on_move(event: PointerEvent) {
 
 function on_lift(event: PointerEvent) {
     is_touching = false;
-    drawing_button = false;
+    dragging_button = false;
 }
 
 function on_scroll(event: WheelEvent) {
@@ -111,7 +113,7 @@ function on_key(event: KeyboardEvent) {
         case '9':
         case '0':
             const index = (Number.parseInt(event.key) + 9) % 10;
-            Palette.set_active(Palette.pips[index], 0);
+            ToolBox.set_active(ToolBox.pips[index], 0);
             return;
         case 's':
             if (event.ctrlKey || event.metaKey) {

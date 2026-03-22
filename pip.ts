@@ -1,15 +1,22 @@
-import {Palette} from "./palette";
+import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
+import {Block} from "./db/block";
+import {Point} from "./point";
+import {Tool} from "./tool";
 
-export class Pip {
+export class Pip extends Tool {
 
     element: HTMLDivElement;
 
     constructor(public hex: string) {
+        super();
+
         this.element = document.createElement('div');
         this.element.classList.add('pip');
         this.set_hex(hex);
+    }
 
+    initialise() {
         let clicked = false;
         let dragged = false;
         this.element.addEventListener('pointerdown', () => clicked = true);
@@ -21,8 +28,8 @@ export class Pip {
                     dragged = true;
                     this.element.classList.add('dragging');
                 }
-                const index = Palette.pips.indexOf(this);
-                Palette.pips.forEach((pip, i) => {
+                const index = ToolBox.pips.indexOf(this);
+                ToolBox.pips.forEach((pip, i) => {
                     let x: number;
                     if (i === index) {
                         x = offset * width;
@@ -41,17 +48,17 @@ export class Pip {
         document.addEventListener('pointerup', event => {
             if (dragged) {
                 const offset = this.drag_offset(event);
-                const index = Palette.pips.indexOf(this);
+                const index = ToolBox.pips.indexOf(this);
                 if (offset !== 0) {
                     const next_index = offset < 0
                         ? index + offset
                         : index + offset + 1
-                    Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
+                    ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element);
 
-                    Palette.pips.splice(index, 1);
-                    Palette.pips.splice(index + offset, 0, this);
+                    ToolBox.pips.splice(index, 1);
+                    ToolBox.pips.splice(index + offset, 0, this);
 
-                    Palette.save_palette_cookie();
+                    ToolBox.save_palette_cookie();
                 }
             }
             clicked = false;
@@ -64,9 +71,9 @@ export class Pip {
                 if (!dragged && [0, 1, 2].includes(event.button)) {
                     const open_editor = Picker.pip
                         ? Picker.pip !== this
-                        : Palette.active[event.button] === this;
+                        : ToolBox.active[event.button] === this;
                     Picker.set_editing(open_editor ? this : null);
-                    Palette.set_active(this, event.button);
+                    ToolBox.set_active(this, event.button);
                 }
                 event.preventDefault();
             }
@@ -78,7 +85,7 @@ export class Pip {
         const {x, width} = this.element.getBoundingClientRect();
         const pip_x = x + width / 2;
         let offset = Math.round((event.x - pip_x) / width);
-        const index = Palette.pips.indexOf(this);
+        const index = ToolBox.pips.indexOf(this);
         return Math.min(Math.max(offset, -index), 9 - index);
     }
 
@@ -88,21 +95,15 @@ export class Pip {
         this.element.style.setProperty('--hex', hex);
     }
 
-    deactivate() {
-        this.element.classList.remove(
-            'active',
-            'button-0',
-            'button-1',
-            'button-2',
-        );
-    }
-
-    activate(button: number = null) {
-        this.element.classList.add('active');
-        if (button !== null) this.element.classList.add(`button-${button}`);
-    }
-
-    editing(editing: boolean) {
+    editing(editing: boolean): void {
         this.element.classList.toggle('editing', editing);
+    }
+
+    on_drag(p1: Point, p2: Point = p1): void {
+        Block.draw_line(p1, p2, this.hex);
+    }
+
+    cookie_key(): string {
+        return ToolBox.pips.indexOf(this).toString();
     }
 }

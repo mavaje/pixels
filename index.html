@@ -10,16 +10,26 @@
 <body>
     <canvas id="pixel-grid">Unsupported</canvas>
     <div id="block-borders"></div>
-    <div id="palette" class="glass"></div>
+    <div id="toolbox" class="glass">
+        <div id="pan-tool" class="button">
+            <div class="icon icon-pan"></div>
+        </div>
+        <div class="vr"></div>
+        <div id="add-pip" class="button animated">
+            <div class="icon icon-add"></div>
+        </div>
+    </div>
     <div id="picker" class="glass hidden">
-        <div id="slider-r" class="slider"></div>
-        <div id="slider-g" class="slider"></div>
-        <div id="slider-b" class="slider"></div>
         <div id="slider-h" class="slider"></div>
         <div id="slider-s" class="slider"></div>
         <div id="slider-l" class="slider"></div>
-        <div>
+        <div class="hr"></div>
+        <div id="slider-r" class="slider"></div>
+        <div id="slider-g" class="slider"></div>
+        <div id="slider-b" class="slider"></div>
+        <div id="picker-tools">
             <input id="hex-input" type="text">
+            <!-- <div id="remove-pip" class="button"></div> -->
         </div>
     </div>
     <a id="downloader" download="pixels.png" hidden></a>

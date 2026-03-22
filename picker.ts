@@ -1,7 +1,7 @@
 import {Pip} from "./pip";
 import {Slider} from "./slider";
 import {Colour, HSL, RGB} from "./colour";
-import {Palette} from "./palette";
+import {ToolBox} from "./tool-box";
 
 export class Picker {
 
@@ -50,7 +50,7 @@ export class Picker {
         Picker.pip.set_hex(hex, animate);
         this.rgb = Colour.hex_to_rgb(hex);
         this.hsl = Colour.hex_to_hsl(hex);
-        Palette.save_palette_cookie();
+        ToolBox.save_palette_cookie();
         this.hex_input.value = hex;
     }
 }
