@@ -1,8 +1,8 @@
 import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
-import {Block} from "./db/block";
 import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
+import {pan_tool} from "./pan-tool";
 
 const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
 
@@ -37,12 +37,15 @@ function on_touch(event: PointerEvent) {
     initial_point = PixelGrid.centre.plus(last_point).view();
 
     is_touching = true;
+    document.body.classList.add('dragging');
 
     if (event.ctrlKey || event.metaKey) {
-
+        ToolBox.update_cursor(pan_tool);
     } else if ([0, 1, 2].includes(event.button)) {
         dragging_button = event.button;
-        ToolBox.get_active(event.button).on_drag(last_point);
+        const tool = ToolBox.get_active(dragging_button);
+        ToolBox.update_last_tool(tool);
+        tool.on_drag(last_point);
     }
 
     Picker.set_editing(null);
@@ -54,10 +57,8 @@ function on_move(event: PointerEvent) {
     if (is_touching) {
         if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
-        } else {
-            if (dragging_button !== null) {
-                ToolBox.get_active(dragging_button).on_drag(last_point, point);
-            }
+        } else if (dragging_button !== null) {
+            ToolBox.get_active(dragging_button).on_drag(point, last_point);
         }
     }
 
@@ -67,14 +68,15 @@ function on_move(event: PointerEvent) {
 function on_lift(event: PointerEvent) {
     is_touching = false;
     dragging_button = false;
+    document.body.classList.remove('dragging');
 }
 
 function on_scroll(event: WheelEvent) {
     event.preventDefault();
 
     const delta = Point.view(
-        event.shiftKey ? event.deltaY : event.deltaX,
-        event.shiftKey ? event.deltaX : event.deltaY,
+        event.deltaX,
+        event.deltaY,
         0,
     );
 
@@ -86,22 +88,10 @@ function on_scroll(event: WheelEvent) {
     }
 }
 
-function on_key(event: KeyboardEvent) {
+function on_key_down(event: KeyboardEvent) {
     if (event.target !== document.body) return;
 
     switch (event.key) {
-        case 'ArrowLeft':
-            PixelGrid.move_by(Point.view(-16, 0, 0));
-            return;
-        case 'ArrowRight':
-            PixelGrid.move_by(Point.view(16, 0, 0));
-            return;
-        case 'ArrowUp':
-            PixelGrid.move_by(Point.view(0, -16, 0));
-            return;
-        case 'ArrowDown':
-            PixelGrid.move_by(Point.view(0, 16, 0));
-            return;
         case '1':
         case '2':
         case '3':
@@ -115,14 +105,37 @@ function on_key(event: KeyboardEvent) {
             const index = (Number.parseInt(event.key) + 9) % 10;
             ToolBox.set_active(ToolBox.pips[index], 0);
             return;
+        case 'ArrowLeft':
+            PixelGrid.move_by(Point.view(-16, 0, 0));
+            return;
+        case 'ArrowRight':
+            PixelGrid.move_by(Point.view(16, 0, 0));
+            return;
+        case 'ArrowUp':
+            PixelGrid.move_by(Point.view(0, -16, 0));
+            return;
+        case 'ArrowDown':
+            PixelGrid.move_by(Point.view(0, 16, 0));
+            return;
+        case 'Control':
+        case 'Meta':
+            ToolBox.update_cursor(pan_tool);
+            return;
         case 's':
             if (event.ctrlKey || event.metaKey) {
                 download_anchor.href = PixelGrid.canvas.toDataURL();
                 download_anchor.click();
                 event.preventDefault();
             }
+            return;
         default:
-            // console.log(event.key);
+            console.log(event.key);
+    }
+}
+
+function on_key_up(event: KeyboardEvent) {
+    if (!(event.ctrlKey || event.metaKey)) {
+        ToolBox.update_cursor();
     }
 }
 
@@ -136,7 +149,8 @@ export function register_listeners() {
     document.addEventListener('pointercancel', on_lift);
     PixelGrid.canvas.addEventListener('wheel', on_scroll, {passive: false});
 
-    document.addEventListener('keydown', on_key);
+    document.addEventListener('keydown', on_key_down);
+    document.addEventListener('keyup', on_key_up);
 
     document.addEventListener('contextmenu', event => event.preventDefault(), {passive: false});
 

@@ -37,24 +37,22 @@ export class Slider<S extends ColourSpace = ColourSpace> {
         let stops: string[];
         switch (this.space) {
             case 'rgb':
-                const rgb = Colour.hex_to_rgb(hex);
-                value = rgb[this.key as keyof RGB];
-                const min_rgb = {...rgb, [this.key]: 0};
-                const max_rgb = {...rgb, [this.key]: 1};
+                value = Picker.rgb[this.key as keyof RGB];
+                const min_rgb = {...Picker.rgb, [this.key]: 0};
+                const max_rgb = {...Picker.rgb, [this.key]: 1};
                 stops = [
                     Colour.rgb_to_hex(min_rgb),
                     Colour.rgb_to_hex(max_rgb),
                 ];
                 break;
             case 'hsl':
-                const hsl = Colour.hex_to_hsl(hex);
-                value = hsl[this.key as keyof HSL];
+                value = Picker.hsl[this.key as keyof HSL];
                 stops = ({
                     h: [0, 1, 2, 3, 4, 5, 6].map(v => v / 6),
                     s: [0, 1],
                     l: [0, 0.5, 1],
                 }[this.key as string])
-                    .map(v => ({...hsl, [this.key]: v}))
+                    .map(v => ({...Picker.hsl, [this.key]: v}))
                     .map(Colour.hsl_to_hex);
                 break;
         }

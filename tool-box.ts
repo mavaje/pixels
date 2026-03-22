@@ -13,17 +13,28 @@ export class ToolBox {
     static pips: Pip[] = [];
 
     static active: Tool[] = [];
+    static last_tool: Tool = pan_tool;
 
     static initialise() {
-        this.load_cookies();
-        if (this.pips.length === 0) this.load_default_palette();
-        if (this.active.length === 0) this.set_active(this.pips[0], 0);
-
         pan_tool.initialise();
 
-        this.add_pip_button.addEventListener('click', () => {
-            this.add_colour_pip('#000000');
-        });
+        this.load_cookies();
+        if (this.pips.length === 0) this.load_default_palette();
+
+        if (this.active.length === 0) this.set_active(this.pips[0], 0);
+
+        this.update_last_tool(this.active[0]);
+
+        // this.add_pip_button.addEventListener('click', () => {
+        //     this.add_colour_pip('#000000', true);
+        // });
+    }
+
+    static tools(): Tool[] {
+        return [
+            pan_tool,
+            ...this.pips,
+        ];
     }
 
     static load_default_palette() {
@@ -49,10 +60,8 @@ export class ToolBox {
                         if (tool === 'pan') {
                             this.set_active(pan_tool, button);
                         } else {
-                            const pip_index = Number.parseInt(tool);
-                            if (!isNaN(pip_index)) {
-                                this.set_active(this.pips[pip_index], button);
-                            }
+                            const pip = this.pips[Number.parseInt(tool)];
+                            if (pip) this.set_active(pip, button);
                         }
                     });
             }
@@ -60,7 +69,7 @@ export class ToolBox {
         return false;
     }
 
-    static add_colour_pip(hex: string) {
+    static add_colour_pip(hex: string, animate: boolean = false) {
         const pip = new Pip(hex);
         pip.initialise();
         this.pips.push(pip);
@@ -68,7 +77,8 @@ export class ToolBox {
     }
 
     static set_active(tool: Tool, button: number) {
-        ToolBox.active[button] = tool;
+        this.active[button] = tool;
+        this.update_last_tool(tool);
         this.update_tools();
         this.save_button_cookie();
     }
@@ -78,13 +88,21 @@ export class ToolBox {
     }
 
     static update_tools() {
-        pan_tool.deactivate();
-        this.pips.forEach(pip => pip.deactivate());
-        const show_button = new Set(ToolBox.active.filter(Boolean)).size > 1;
-        ToolBox.active.forEach((pip, i) => {
-            pip?.activate(show_button ? i : null);
+        this.tools().forEach(pip => pip.deactivate());
+        this.active.forEach((pip, i) => {
+            pip?.activate(i);
         });
-        PixelGrid.canvas.style.cursor = ToolBox.active[0]?.cursor() ?? 'auto';
+        this.update_cursor();
+    }
+
+    static update_last_tool(tool: Tool) {
+        this.last_tool = tool;
+        this.update_cursor();
+    }
+
+    static update_cursor(tool: Tool = this.last_tool) {
+        PixelGrid.canvas.style.setProperty('--cursor', tool.cursor());
+        PixelGrid.canvas.style.setProperty('--cursor-down', tool.cursor_down());
     }
 
     static save_palette_cookie() {
@@ -92,6 +110,6 @@ export class ToolBox {
     }
 
     static save_button_cookie() {
-        document.cookie = `buttons=${this.active.map(p => p.cookie_key()).join(',')}`;
+        document.cookie = `buttons=${this.active.map(p => p?.cookie_key() ?? '').join(',')}`;
     }
 }

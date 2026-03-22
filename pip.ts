@@ -6,13 +6,16 @@ import {Tool} from "./tool";
 
 export class Pip extends Tool {
 
-    element: HTMLDivElement;
-
     constructor(public hex: string) {
         super();
 
         this.element = document.createElement('div');
         this.element.classList.add('pip');
+
+        this.badge_container = document.createElement('div');
+        this.badge_container.classList.add('badges');
+        this.element.append(this.badge_container);
+
         this.set_hex(hex);
     }
 
@@ -105,5 +108,45 @@ export class Pip extends Tool {
 
     cookie_key(): string {
         return ToolBox.pips.indexOf(this).toString();
+    }
+
+    cursor(): string {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const context = canvas.getContext('2d');
+
+        context.translate(0.5, 0.5);
+
+        const width = 3;
+
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(1 + width, 1);
+        context.lineTo(1, 1 + width);
+        // context.bezierCurveTo(6, 4, 4, 6, 2, 6);
+        context.closePath();
+
+        context.moveTo(1 + width, 1);
+        context.lineTo(15, 15 - width);
+        // context.bezierCurveTo(23, 21, 21, 23, 19, 23);
+        context.lineTo(15 - width, 15);
+        context.lineTo(1, 1 + width);
+        // context.bezierCurveTo(4, 6, 6, 4, 6, 2);
+        context.lineTo(1 + width, 1);
+        context.closePath();
+
+        context.fillStyle = 'black';
+        context.fill();
+
+        context.strokeStyle = 'white';
+        context.lineWidth = 1;
+        context.stroke();
+
+        context.fillStyle = this.hex;
+        context.fillRect(0, 8, 7, 7);
+        context.strokeRect(0, 8, 7, 7);
+
+        return `url(${canvas.toDataURL()}), auto`;
     }
 }

@@ -1,27 +1,39 @@
 import {Point} from "./point";
+import {ToolBox} from "./tool-box";
 
 export abstract class Tool {
 
     element: HTMLDivElement;
+    badge_container: HTMLDivElement;
+
+    active: boolean = false;
+    active_button?: number = null;
 
     activate(button: number = null) {
+        this.active = true;
+        this.active_button = button;
         this.element.classList.add('active');
-        if (button !== null) {
-            this.element.classList.add(`button-${button}`);
+        if (ToolBox.active.length > 1) {
+            const badge = document.createElement('div');
+            badge.innerText = ['L', 'M', 'R'][button];
+            badge.classList.add('badge', `button-${button}`);
+            this.badge_container.append(badge);
         }
     }
 
     deactivate() {
-        this.element.classList.remove(
-            'active',
-            'button-0',
-            'button-1',
-            'button-2',
-        );
+        this.active = false;
+        this.active_button = null;
+        this.element.classList.remove('active');
+        this.badge_container.innerHTML = '';
     }
 
     cursor(): string {
         return 'auto';
+    }
+
+    cursor_down(): string {
+        return 'var(--cursor)';
     }
 
     abstract initialise(): void;

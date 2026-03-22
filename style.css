@@ -23,6 +23,7 @@
     transition-duration: 0.2s;
     transition-timing-function: ease;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 html, body {
@@ -34,8 +35,15 @@ html, body {
 }
 
 canvas#pixel-grid {
+    --cursor: auto;
+    --cursor-down: auto;
     image-rendering: pixelated;
     overflow: hidden;
+    cursor: var(--cursor);
+}
+
+body.dragging canvas#pixel-grid {
+    cursor: var(--cursor-down);
 }
 
 #block-borders {
@@ -205,8 +213,7 @@ canvas#pixel-grid {
     border-top-left-radius: 4px;
 }
 
-#toolbox .button::after,
-#toolbox .pip::after {
+#toolbox .badges .badge {
     position: absolute;
     display: flex;
     justify-content: center;
@@ -221,24 +228,18 @@ canvas#pixel-grid {
     transform: translate(var(--x), 0);
 }
 
-#toolbox .button.button-1::after,
-#toolbox .pip.button-1::after {
-    content: 'M';
+#toolbox .badges .badge.button-0 {
+    left: 1px;
+    bottom: 1px;
+}
+
+#toolbox .badges .badge.button-1 {
     left: 12px;
     bottom: -2px;
 }
 
-#toolbox .button.button-2::after,
-#toolbox .pip.button-2::after {
-    content: 'R';
+#toolbox .badges .badge.button-2 {
     right: 1px;
-    bottom: 1px;
-}
-
-#toolbox .button.button-0::after,
-#toolbox .pip.button-0::after {
-    content: 'L';
-    left: 1px;
     bottom: 1px;
 }
 
@@ -248,7 +249,6 @@ canvas#pixel-grid {
     right: 4px;
     display: flex;
     flex-direction: column;
-    transition-property: opacity;
 }
 
 #picker-tools {
@@ -316,6 +316,12 @@ canvas#pixel-grid {
     border-bottom: 1px solid #ffffff3f;
     border-radius: 22px;
     padding: 4px 5px;
+    transition-property: opacity;
+}
+
+body.dragging .glass {
+    /*opacity: 0;*/
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur()) {

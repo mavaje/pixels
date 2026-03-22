@@ -5,9 +5,11 @@ import {PixelGrid} from "./pixel-grid";
 
 class PanTool extends Tool {
     element = document.getElementById('pan-tool') as HTMLDivElement;
+    badge_container = document.getElementById('pan-badges') as HTMLDivElement;
 
     initialise() {
         this.element.classList.add('animated');
+        this.badge_container.classList.add('badge');
 
         let clicked = false;
         this.element.addEventListener('pointerdown', () => clicked = true);
@@ -24,7 +26,7 @@ class PanTool extends Tool {
     }
 
     on_drag(p1: Point, p2?: Point) {
-        if (p2) PixelGrid.move_by(p1.view().minus(p2));
+        if (p2) PixelGrid.move_by(p2.view().minus(p1));
     }
 
     cookie_key(): string {
@@ -33,6 +35,10 @@ class PanTool extends Tool {
 
     cursor(): string {
         return 'grab';
+    }
+
+    cursor_down(): string {
+        return 'grabbing';
     }
 }
 

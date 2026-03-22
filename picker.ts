@@ -22,6 +22,9 @@ export class Picker {
         this.sliders.push(new Slider('slider-s', 'hsl', 's'));
         this.sliders.push(new Slider('slider-l', 'hsl', 'l'));
 
+        this.hex_input.addEventListener('focus', () => {
+            this.hex_input.setSelectionRange(1, 7);
+        });
         this.hex_input.addEventListener('change', () => {
             const hex = Colour.clean_hex(this.hex_input.value, true);
             this.set_hex(hex);

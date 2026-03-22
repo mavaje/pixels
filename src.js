@@ -11466,23 +11466,21 @@ var init_slider = __esm({
         let stops;
         switch (this.space) {
           case "rgb":
-            const rgb = Colour.hex_to_rgb(hex);
-            value = rgb[this.key];
-            const min_rgb = { ...rgb, [this.key]: 0 };
-            const max_rgb = { ...rgb, [this.key]: 1 };
+            value = Picker.rgb[this.key];
+            const min_rgb = { ...Picker.rgb, [this.key]: 0 };
+            const max_rgb = { ...Picker.rgb, [this.key]: 1 };
             stops = [
               Colour.rgb_to_hex(min_rgb),
               Colour.rgb_to_hex(max_rgb)
             ];
             break;
           case "hsl":
-            const hsl = Colour.hex_to_hsl(hex);
-            value = hsl[this.key];
+            value = Picker.hsl[this.key];
             stops = {
               h: [0, 1, 2, 3, 4, 5, 6].map((v) => v / 6),
               s: [0, 1],
               l: [0, 0.5, 1]
-            }[this.key].map((v) => ({ ...hsl, [this.key]: v })).map(Colour.hsl_to_hex);
+            }[this.key].map((v) => ({ ...Picker.hsl, [this.key]: v })).map(Colour.hsl_to_hex);
             break;
         }
         this.element.classList.toggle("animate", animate);
@@ -11553,6 +11551,9 @@ var init_picker = __esm({
         this.sliders.push(new Slider("slider-h", "hsl", "h"));
         this.sliders.push(new Slider("slider-s", "hsl", "s"));
         this.sliders.push(new Slider("slider-l", "hsl", "l"));
+        this.hex_input.addEventListener("focus", () => {
+          this.hex_input.setSelectionRange(1, 7);
+        });
         this.hex_input.addEventListener("change", () => {
           const hex = Colour.clean_hex(this.hex_input.value, true);
           this.set_hex(hex);
@@ -11587,23 +11588,34 @@ var init_picker = __esm({
 var Tool;
 var init_tool = __esm({
   "tool.ts"() {
+    init_tool_box();
     Tool = class {
+      constructor() {
+        this.active = false;
+        this.active_button = null;
+      }
       activate(button = null) {
+        this.active = true;
+        this.active_button = button;
         this.element.classList.add("active");
-        if (button !== null) {
-          this.element.classList.add(`button-${button}`);
+        if (ToolBox.active.length > 1) {
+          const badge = document.createElement("div");
+          badge.innerText = ["L", "M", "R"][button];
+          badge.classList.add("badge", `button-${button}`);
+          this.badge_container.append(badge);
         }
       }
       deactivate() {
-        this.element.classList.remove(
-          "active",
-          "button-0",
-          "button-1",
-          "button-2"
-        );
+        this.active = false;
+        this.active_button = null;
+        this.element.classList.remove("active");
+        this.badge_container.innerHTML = "";
       }
       cursor() {
         return "auto";
+      }
+      cursor_down() {
+        return "var(--cursor)";
       }
     };
   }
@@ -11623,6 +11635,9 @@ var init_pip = __esm({
         this.hex = hex;
         this.element = document.createElement("div");
         this.element.classList.add("pip");
+        this.badge_container = document.createElement("div");
+        this.badge_container.classList.add("badges");
+        this.element.append(this.badge_container);
         this.set_hex(hex);
       }
       initialise() {
@@ -11704,6 +11719,34 @@ var init_pip = __esm({
       cookie_key() {
         return ToolBox.pips.indexOf(this).toString();
       }
+      cursor() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 16;
+        canvas.height = 16;
+        const context = canvas.getContext("2d");
+        context.translate(0.5, 0.5);
+        const width = 3;
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(1 + width, 1);
+        context.lineTo(1, 1 + width);
+        context.closePath();
+        context.moveTo(1 + width, 1);
+        context.lineTo(15, 15 - width);
+        context.lineTo(15 - width, 15);
+        context.lineTo(1, 1 + width);
+        context.lineTo(1 + width, 1);
+        context.closePath();
+        context.fillStyle = "black";
+        context.fill();
+        context.strokeStyle = "white";
+        context.lineWidth = 1;
+        context.stroke();
+        context.fillStyle = this.hex;
+        context.fillRect(0, 8, 7, 7);
+        context.strokeRect(0, 8, 7, 7);
+        return `url(${canvas.toDataURL()}), auto`;
+      }
     };
   }
 });
@@ -11719,9 +11762,11 @@ var init_pan_tool = __esm({
       constructor() {
         super(...arguments);
         this.element = document.getElementById("pan-tool");
+        this.badge_container = document.getElementById("pan-badges");
       }
       initialise() {
         this.element.classList.add("animated");
+        this.badge_container.classList.add("badge");
         let clicked = false;
         this.element.addEventListener("pointerdown", () => clicked = true);
         document.addEventListener("pointerup", () => clicked = false);
@@ -11736,13 +11781,16 @@ var init_pan_tool = __esm({
         this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
       }
       on_drag(p1, p2) {
-        if (p2) PixelGrid.move_by(p1.view().minus(p2));
+        if (p2) PixelGrid.move_by(p2.view().minus(p1));
       }
       cookie_key() {
         return "pan";
       }
       cursor() {
         return "grab";
+      }
+      cursor_down() {
+        return "grabbing";
       }
     };
     pan_tool = new PanTool();
@@ -11761,7 +11809,7 @@ var init_tool_box = __esm({
     init_colour();
     init_pan_tool();
     init_pixel_grid();
-    ToolBox = class _ToolBox {
+    ToolBox = class {
       static {
         this.toolbox = document.getElementById("toolbox");
       }
@@ -11774,14 +11822,21 @@ var init_tool_box = __esm({
       static {
         this.active = [];
       }
+      static {
+        this.last_tool = pan_tool;
+      }
       static initialise() {
+        pan_tool.initialise();
         this.load_cookies();
         if (this.pips.length === 0) this.load_default_palette();
         if (this.active.length === 0) this.set_active(this.pips[0], 0);
-        pan_tool.initialise();
-        this.add_pip_button.addEventListener("click", () => {
-          this.add_colour_pip("#000000");
-        });
+        this.update_last_tool(this.active[0]);
+      }
+      static tools() {
+        return [
+          pan_tool,
+          ...this.pips
+        ];
       }
       static load_default_palette() {
         this.add_colour_pip("#000000");
@@ -11801,24 +11856,23 @@ var init_tool_box = __esm({
                 if (tool === "pan") {
                   this.set_active(pan_tool, button);
                 } else {
-                  const pip_index = Number.parseInt(tool);
-                  if (!isNaN(pip_index)) {
-                    this.set_active(this.pips[pip_index], button);
-                  }
+                  const pip = this.pips[Number.parseInt(tool)];
+                  if (pip) this.set_active(pip, button);
                 }
               });
           }
         }
         return false;
       }
-      static add_colour_pip(hex) {
+      static add_colour_pip(hex, animate = false) {
         const pip = new Pip(hex);
         pip.initialise();
         this.pips.push(pip);
         this.toolbox.insertBefore(pip.element, this.add_pip_button);
       }
       static set_active(tool, button) {
-        _ToolBox.active[button] = tool;
+        this.active[button] = tool;
+        this.update_last_tool(tool);
         this.update_tools();
         this.save_button_cookie();
       }
@@ -11826,19 +11880,25 @@ var init_tool_box = __esm({
         return this.active[button] ?? pan_tool;
       }
       static update_tools() {
-        pan_tool.deactivate();
-        this.pips.forEach((pip) => pip.deactivate());
-        const show_button = new Set(_ToolBox.active.filter(Boolean)).size > 1;
-        _ToolBox.active.forEach((pip, i) => {
-          pip?.activate(show_button ? i : null);
+        this.tools().forEach((pip) => pip.deactivate());
+        this.active.forEach((pip, i) => {
+          pip?.activate(i);
         });
-        PixelGrid.canvas.style.cursor = _ToolBox.active[0]?.cursor() ?? "auto";
+        this.update_cursor();
+      }
+      static update_last_tool(tool) {
+        this.last_tool = tool;
+        this.update_cursor();
+      }
+      static update_cursor(tool = this.last_tool) {
+        PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
+        PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
       }
       static save_palette_cookie() {
         document.cookie = `palette=${this.pips.map((p) => p.hex).join(",")}`;
       }
       static save_button_cookie() {
-        document.cookie = `buttons=${this.active.map((p) => p.cookie_key()).join(",")}`;
+        document.cookie = `buttons=${this.active.map((p) => p?.cookie_key() ?? "").join(",")}`;
       }
     };
   }
@@ -11867,10 +11927,14 @@ function on_touch(event) {
   last_point = Point.view(event.x, event.y);
   initial_point = PixelGrid.centre.plus(last_point).view();
   is_touching = true;
+  document.body.classList.add("dragging");
   if (event.ctrlKey || event.metaKey) {
+    ToolBox.update_cursor(pan_tool);
   } else if ([0, 1, 2].includes(event.button)) {
     dragging_button = event.button;
-    ToolBox.get_active(event.button).on_drag(last_point);
+    const tool = ToolBox.get_active(dragging_button);
+    ToolBox.update_last_tool(tool);
+    tool.on_drag(last_point);
   }
   Picker.set_editing(null);
 }
@@ -11879,10 +11943,8 @@ function on_move(event) {
   if (is_touching) {
     if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
-    } else {
-      if (dragging_button !== null) {
-        ToolBox.get_active(dragging_button).on_drag(last_point, point);
-      }
+    } else if (dragging_button !== null) {
+      ToolBox.get_active(dragging_button).on_drag(point, last_point);
     }
   }
   last_point = point;
@@ -11890,12 +11952,13 @@ function on_move(event) {
 function on_lift(event) {
   is_touching = false;
   dragging_button = false;
+  document.body.classList.remove("dragging");
 }
 function on_scroll(event) {
   event.preventDefault();
   const delta = Point.view(
-    event.shiftKey ? event.deltaY : event.deltaX,
-    event.shiftKey ? event.deltaX : event.deltaY,
+    event.deltaX,
+    event.deltaY,
     0
   );
   if (event.ctrlKey || event.metaKey) {
@@ -11905,21 +11968,9 @@ function on_scroll(event) {
     PixelGrid.move_by(delta);
   }
 }
-function on_key(event) {
+function on_key_down(event) {
   if (event.target !== document.body) return;
   switch (event.key) {
-    case "ArrowLeft":
-      PixelGrid.move_by(Point.view(-16, 0, 0));
-      return;
-    case "ArrowRight":
-      PixelGrid.move_by(Point.view(16, 0, 0));
-      return;
-    case "ArrowUp":
-      PixelGrid.move_by(Point.view(0, -16, 0));
-      return;
-    case "ArrowDown":
-      PixelGrid.move_by(Point.view(0, 16, 0));
-      return;
     case "1":
     case "2":
     case "3":
@@ -11933,13 +11984,36 @@ function on_key(event) {
       const index = (Number.parseInt(event.key) + 9) % 10;
       ToolBox.set_active(ToolBox.pips[index], 0);
       return;
+    case "ArrowLeft":
+      PixelGrid.move_by(Point.view(-16, 0, 0));
+      return;
+    case "ArrowRight":
+      PixelGrid.move_by(Point.view(16, 0, 0));
+      return;
+    case "ArrowUp":
+      PixelGrid.move_by(Point.view(0, -16, 0));
+      return;
+    case "ArrowDown":
+      PixelGrid.move_by(Point.view(0, 16, 0));
+      return;
+    case "Control":
+    case "Meta":
+      ToolBox.update_cursor(pan_tool);
+      return;
     case "s":
       if (event.ctrlKey || event.metaKey) {
         download_anchor.href = PixelGrid.canvas.toDataURL();
         download_anchor.click();
         event.preventDefault();
       }
+      return;
     default:
+      console.log(event.key);
+  }
+}
+function on_key_up(event) {
+  if (!(event.ctrlKey || event.metaKey)) {
+    ToolBox.update_cursor();
   }
 }
 function register_listeners() {
@@ -11950,7 +12024,8 @@ function register_listeners() {
   document.addEventListener("pointerup", on_lift);
   document.addEventListener("pointercancel", on_lift);
   PixelGrid.canvas.addEventListener("wheel", on_scroll, { passive: false });
-  document.addEventListener("keydown", on_key);
+  document.addEventListener("keydown", on_key_down);
+  document.addEventListener("keyup", on_key_up);
   document.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
   on_resize();
   on_hash();
@@ -11962,6 +12037,7 @@ var init_listeners = __esm({
     init_point();
     init_tool_box();
     init_picker();
+    init_pan_tool();
     download_anchor = document.getElementById("downloader");
     is_touching = false;
     dragging_button = null;
