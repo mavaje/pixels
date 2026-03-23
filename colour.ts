@@ -17,12 +17,10 @@ export class Colour {
             case 2:
                 return hex.repeat(3);
             case 3:
-            case 4:
-            case 5:
                 const [r, g, b] = hex;
                 return r + r + g + g + b + b;
             default:
-                return hex.slice(0, 6);
+                return hex.padEnd(6, '0').slice(0, 6);
         }
     }
 

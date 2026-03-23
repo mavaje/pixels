@@ -10996,12 +10996,10 @@ var init_colour = __esm({
           case 2:
             return hex.repeat(3);
           case 3:
-          case 4:
-          case 5:
             const [r, g, b] = hex;
             return r + r + g + g + b + b;
           default:
-            return hex.slice(0, 6);
+            return hex.padEnd(6, "0").slice(0, 6);
         }
       }
       static hex_to_rgb(hex) {
@@ -11148,7 +11146,7 @@ var init_block = __esm({
         point = point.grid();
         const block = _Block.blocks[point.block_id()];
         if (block) {
-          return block.get_pixel(point.xy());
+          return block.get_pixel(point.pixel().xy());
         } else {
           return _Block.BACKGROUND;
         }
@@ -11300,157 +11298,6 @@ var init_point = __esm({
   }
 });
 
-// pixel-grid.ts
-var PixelGrid;
-var init_pixel_grid = __esm({
-  "pixel-grid.ts"() {
-    init_block();
-    init_point();
-    init_config();
-    PixelGrid = class {
-      static {
-        this.centre = Point.grid(0, 0);
-      }
-      static {
-        this.scale = 4;
-      }
-      static {
-        this.width = 0;
-      }
-      static {
-        this.height = 0;
-      }
-      static {
-        this.canvas = document.getElementById("pixel-grid");
-      }
-      static {
-        this.debug_layer = document.getElementById("block-borders");
-      }
-      static resize() {
-        const { width, height } = document.body.getBoundingClientRect();
-        this.width = width;
-        this.height = height;
-        this.render();
-      }
-      static size() {
-        return Math.min(this.width, this.height);
-      }
-      static left() {
-        return this.centre.x - this.width / (2 * this.scale);
-      }
-      static right() {
-        return this.centre.x + this.width / (2 * this.scale);
-      }
-      static top() {
-        return this.centre.y - this.height / (2 * this.scale);
-      }
-      static bottom() {
-        return this.centre.y + this.height / (2 * this.scale);
-      }
-      static sync_canvas() {
-        const left = Math.floor(this.left());
-        const right = Math.ceil(this.right());
-        const top = Math.floor(this.top());
-        const bottom = Math.ceil(this.bottom());
-        this.canvas.width = right - left;
-        this.canvas.height = bottom - top;
-        this.canvas.style.marginLeft = `${(left - this.left()) * this.scale}px`;
-        this.canvas.style.marginRight = `${(this.right() - right) * this.scale}px`;
-        this.canvas.style.marginTop = `${(top - this.top()) * this.scale}px`;
-        this.canvas.style.marginBottom = `${(this.bottom() - bottom) * this.scale}px`;
-        this.context = this.canvas.getContext("2d");
-      }
-      static sync_blocks() {
-        const [left, top] = Point.grid(this.left(), this.top()).block().xy();
-        let x, y;
-        for (x = left; x < this.right(); x += Block.SIZE) {
-          for (y = top; y < this.bottom(); y += Block.SIZE) {
-            const block_point = Point.grid(x, y);
-            if (!(block_point.block_id() in Block.blocks)) {
-              new Block(block_point);
-            }
-          }
-        }
-      }
-      static clear() {
-        this.context.clearRect(
-          0,
-          0,
-          this.canvas.width,
-          this.canvas.height
-        );
-      }
-      static render() {
-        this.sync_canvas();
-        this.sync_blocks();
-        this.clear();
-        Object.values(Block.blocks).forEach((block) => {
-          block.render();
-        });
-      }
-      static render_block(block) {
-        this.context.drawImage(
-          block.canvas,
-          block.point.x - Math.floor(this.left()),
-          block.point.y - Math.floor(this.top())
-        );
-        if (DEBUG.block_borders && block.debug_element) {
-          const x = Math.floor((block.point.x - this.left()) * this.scale);
-          const y = Math.floor((block.point.y - this.top()) * this.scale);
-          const size = Block.SIZE * this.scale;
-          block.debug_element.style.left = `${x + 1}px`;
-          block.debug_element.style.top = `${y + 1}px`;
-          block.debug_element.style.width = `${size - 2}px`;
-          block.debug_element.style.height = `${size - 2}px`;
-          if (!block.debug_element.isConnected) {
-            this.debug_layer.append(block.debug_element);
-          }
-        }
-      }
-      static move_to(centre) {
-        this.centre = centre.grid();
-        this.render();
-        this.update_hash();
-      }
-      static move_by(delta) {
-        this.move_to(this.centre.plus(delta));
-      }
-      static set_scale(scale, origin) {
-        scale = Math.max(scale, 1);
-        scale = Math.min(scale, this.size() / 8);
-        if (origin) {
-          this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);
-        }
-        this.scale = scale;
-        this.render();
-        this.update_hash();
-      }
-      static scale_by(delta, origin) {
-        this.set_scale(this.scale * 1.01 ** -delta, origin);
-      }
-      static set_size(size) {
-        this.set_scale(this.size() / size);
-      }
-      static {
-        this.timeout = null;
-      }
-      static update_hash() {
-        const hash = this.centre.hash_id(this.size() / this.scale);
-        if (hash !== location.hash) {
-          if (this.timeout) clearTimeout(this.timeout);
-          this.timeout = setTimeout(() => {
-            if (history.pushState) {
-              history.pushState(null, null, hash);
-            } else {
-              location.hash = hash;
-            }
-          }, 10);
-        }
-      }
-    };
-  }
-});
-
 // slider.ts
 var Slider;
 var init_slider = __esm({
@@ -11543,10 +11390,10 @@ __export(picker_exports, {
 var Picker;
 var init_picker = __esm({
   "picker.ts"() {
+    init_pip();
     init_slider();
     init_colour();
     init_tool_box();
-    init_pixel_grid();
     init_block();
     Picker = class _Picker {
       static {
@@ -11585,10 +11432,13 @@ var init_picker = __esm({
           this.set_hex(hex);
           this.sliders.forEach((slider) => slider.set_value(hex));
         });
+        this.hex_input.addEventListener("keypress", (event) => {
+          if (event.key === "Enter") {
+            this.hex_input.blur();
+          }
+        });
         this.pick_tool.addEventListener("click", () => {
-          this.pick_mode = true;
-          this.pick_tool.classList.add("active");
-          PixelGrid.canvas.style.setProperty("--cursor", "crosshair");
+          this.start_picking();
         });
         this.remove_pip.addEventListener("click", () => {
           ToolBox.remove_colour_pip(this.pip, true);
@@ -11614,9 +11464,21 @@ var init_picker = __esm({
         ToolBox.save_palette_cookie();
         this.hex_input.value = hex;
       }
-      static pick(point) {
+      static start_picking() {
+        this.element.classList.add("animate");
+        this.pick_mode = true;
+        this.pick_tool.classList.add("active");
+        ToolBox.update_cursor();
+      }
+      static pick(point, button) {
+        this.element.classList.add("animate");
         const hex = Block.pixel_at(point);
-        if (hex !== this.pip.hex) {
+        if (!this.pip && button !== null) {
+          if (ToolBox.active[button] instanceof Pip) {
+            this.pip = ToolBox.active[button];
+          }
+        }
+        if (this.pip && hex !== this.pip.hex) {
           this.set_hex(hex);
           this.sliders.forEach((slider) => slider.set_value(hex));
         }
@@ -11756,7 +11618,6 @@ var init_pip = __esm({
         const size = 24;
         const width = 4;
         const nib = 2;
-        const dot_size = 8;
         const canvas = document.createElement("canvas");
         canvas.width = size;
         canvas.height = size;
@@ -11777,6 +11638,7 @@ var init_pip = __esm({
         context.strokeStyle = "white";
         context.lineWidth = 1;
         context.stroke();
+        const dot_size = 12;
         context.beginPath();
         context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
         context.fillStyle = this.hex;
@@ -11869,11 +11731,7 @@ var init_tool_box = __esm({
         if (this.pips.length === 0) this.load_default_palette();
         if (this.active.length === 0) this.set_active(this.pips[0]);
         this.update_last_tool(this.active[0]);
-        this.add_pip_button.addEventListener("click", () => {
-          const pip = this.add_colour_pip(Picker.pip?.hex ?? "#000000", true);
-          Picker.set_editing(pip);
-          _ToolBox.set_active(pip);
-        });
+        this.add_pip_button.addEventListener("click", () => this.new_colour_pip());
       }
       static tools() {
         return [
@@ -11919,6 +11777,11 @@ var init_tool_box = __esm({
         }
         return pip;
       }
+      static new_colour_pip() {
+        const pip = this.add_colour_pip(Picker.pip?.hex ?? "#000000", true);
+        Picker.set_editing(pip);
+        _ToolBox.set_active(pip);
+      }
       static remove_colour_pip(pip, animate = false) {
         let active = null;
         this.active.forEach((tool, i) => {
@@ -11953,7 +11816,11 @@ var init_tool_box = __esm({
         this.save_button_cookie();
       }
       static get_active(button) {
-        return this.active[button] ?? pan_tool;
+        if (this.active[button]) {
+          return this.last_tool = this.active[button];
+        } else {
+          return pan_tool;
+        }
       }
       static update_tools() {
         this.tools().forEach((pip) => pip.deactivate());
@@ -11967,16 +11834,193 @@ var init_tool_box = __esm({
         this.update_cursor();
       }
       static update_cursor(tool = this.last_tool) {
-        if (tool) {
+        if (Picker.pick_mode) {
+          this.picker_cursor();
+        } else if (tool) {
           PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
           PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
         }
+      }
+      static picker_cursor() {
+        PixelGrid.canvas.style.setProperty("--cursor", "crosshair");
+        PixelGrid.canvas.style.setProperty("--cursor-down", "var(--cursor)");
       }
       static save_palette_cookie() {
         document.cookie = `palette=${this.pips.map((p) => p.hex).join(",")}`;
       }
       static save_button_cookie() {
         document.cookie = `buttons=${this.active.map((p) => p?.cookie_key() ?? "").join(",")}`;
+      }
+    };
+  }
+});
+
+// pixel-grid.ts
+var PixelGrid;
+var init_pixel_grid = __esm({
+  "pixel-grid.ts"() {
+    init_block();
+    init_point();
+    init_config();
+    init_tool_box();
+    init_pip();
+    init_picker();
+    PixelGrid = class {
+      static {
+        this.centre = Point.grid(0, 0);
+      }
+      static {
+        this.scale = 4;
+      }
+      static {
+        this.width = 0;
+      }
+      static {
+        this.height = 0;
+      }
+      static {
+        this.canvas = document.getElementById("pixel-grid");
+      }
+      static {
+        this.ghost_layer = document.getElementById("ghost-layer");
+      }
+      static {
+        this.pixel_preview = document.getElementById("pixel-preview");
+      }
+      static resize() {
+        const { width, height } = document.body.getBoundingClientRect();
+        this.width = width;
+        this.height = height;
+        this.render();
+      }
+      static size() {
+        return Math.min(this.width, this.height);
+      }
+      static left() {
+        return this.centre.x - this.width / (2 * this.scale);
+      }
+      static right() {
+        return this.centre.x + this.width / (2 * this.scale);
+      }
+      static top() {
+        return this.centre.y - this.height / (2 * this.scale);
+      }
+      static bottom() {
+        return this.centre.y + this.height / (2 * this.scale);
+      }
+      static sync_canvas() {
+        const left = Math.floor(this.left());
+        const right = Math.ceil(this.right());
+        const top = Math.floor(this.top());
+        const bottom = Math.ceil(this.bottom());
+        this.canvas.width = right - left;
+        this.canvas.height = bottom - top;
+        this.canvas.style.marginLeft = `${(left - this.left()) * this.scale}px`;
+        this.canvas.style.marginRight = `${(this.right() - right) * this.scale}px`;
+        this.canvas.style.marginTop = `${(top - this.top()) * this.scale}px`;
+        this.canvas.style.marginBottom = `${(this.bottom() - bottom) * this.scale}px`;
+        this.context = this.canvas.getContext("2d");
+      }
+      static sync_blocks() {
+        const [left, top] = Point.grid(this.left(), this.top()).block().xy();
+        let x, y;
+        for (x = left; x < this.right(); x += Block.SIZE) {
+          for (y = top; y < this.bottom(); y += Block.SIZE) {
+            const block_point = Point.grid(x, y);
+            if (!(block_point.block_id() in Block.blocks)) {
+              new Block(block_point);
+            }
+          }
+        }
+      }
+      static clear() {
+        this.context.clearRect(
+          0,
+          0,
+          this.canvas.width,
+          this.canvas.height
+        );
+      }
+      static render() {
+        this.sync_canvas();
+        this.sync_blocks();
+        this.clear();
+        Object.values(Block.blocks).forEach((block) => {
+          block.render();
+        });
+      }
+      static render_block(block) {
+        this.context.drawImage(
+          block.canvas,
+          block.point.x - Math.floor(this.left()),
+          block.point.y - Math.floor(this.top())
+        );
+        if (DEBUG.block_borders && block.debug_element) {
+          const x = Math.floor((block.point.x - this.left()) * this.scale);
+          const y = Math.floor((block.point.y - this.top()) * this.scale);
+          const size = Block.SIZE * this.scale;
+          block.debug_element.style.left = `${x + 1}px`;
+          block.debug_element.style.top = `${y + 1}px`;
+          block.debug_element.style.width = `${size - 2}px`;
+          block.debug_element.style.height = `${size - 2}px`;
+          if (!block.debug_element.isConnected) {
+            this.ghost_layer.append(block.debug_element);
+          }
+        }
+      }
+      static render_preview(cursor) {
+        const visible = Picker.pick_mode || ToolBox.last_tool instanceof Pip;
+        this.pixel_preview.classList.toggle("hidden", !visible);
+        if (visible) {
+          cursor = cursor.grid().floor().view();
+          this.pixel_preview.style.width = `${this.scale - 2}px`;
+          this.pixel_preview.style.height = `${this.scale - 2}px`;
+          this.pixel_preview.style.left = `${cursor.x - 1}px`;
+          this.pixel_preview.style.top = `${cursor.y - 1}px`;
+        }
+      }
+      static hide_preview() {
+        this.pixel_preview.classList.add("hidden");
+      }
+      static move_to(centre) {
+        this.centre = centre.grid();
+        this.render();
+        this.update_hash();
+      }
+      static move_by(delta) {
+        this.move_to(this.centre.plus(delta));
+      }
+      static set_scale(scale, origin) {
+        scale = Math.max(scale, 1);
+        scale = Math.min(scale, this.size() / 8);
+        if (origin) {
+          this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);
+        }
+        this.scale = scale;
+        this.render();
+        this.update_hash();
+      }
+      static scale_by(delta, origin) {
+        this.set_scale(this.scale * 1.01 ** -delta, origin);
+      }
+      static set_size(size) {
+        this.set_scale(this.size() / size);
+      }
+      static {
+        this.timeout = null;
+      }
+      static update_hash() {
+        const hash = this.centre.hash_id(this.size() / this.scale);
+        if (hash !== location.hash) {
+          if (this.timeout) clearTimeout(this.timeout);
+          this.timeout = setTimeout(() => {
+            if (history.pushState) {
+              history.pushState(null, null, hash);
+            } else {
+              location.hash = hash;
+            }
+          }, 10);
+        }
       }
     };
   }
@@ -12006,16 +12050,15 @@ function on_touch(event) {
   initial_point = PixelGrid.centre.plus(last_point).view();
   is_touching = true;
   document.body.classList.add("dragging");
-  if (Picker.pick_mode) {
-    Picker.pick(last_point);
+  if (Picker.pick_mode || event.altKey) {
+    Picker.pick(last_point, Picker.pick_mode ? null : event.button);
   } else {
     if (event.ctrlKey || event.metaKey) {
       ToolBox.update_cursor(pan_tool);
     } else if ([0, 1, 2].includes(event.button)) {
       dragging_button = event.button;
       const tool = ToolBox.get_active(dragging_button);
-      ToolBox.update_last_tool(tool);
-      tool.on_drag(last_point);
+      ToolBox.update_cursor(tool);
     }
     Picker.set_editing(null);
   }
@@ -12023,50 +12066,59 @@ function on_touch(event) {
 function on_move(event) {
   const point = Point.view(event.x, event.y);
   if (is_touching) {
-    if (Picker.pick_mode) {
-      Picker.pick(point);
+    if (Picker.pick_mode || event.altKey) {
+      Picker.pick(point, Picker.pick_mode ? null : dragging_button);
     } else if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
     } else if (dragging_button !== null) {
-      ToolBox.get_active(dragging_button).on_drag(point, last_point);
+      const tool = ToolBox.get_active(dragging_button);
+      tool.on_drag(point, last_point);
     }
     [
       ToolBox.toolbox,
       Picker.element
     ].forEach((element) => {
-      const { x, y } = element.getBoundingClientRect();
-      const dx = x - event.x;
-      const dy = y - event.y;
-      element.style.opacity = dx < 16 && dy < 16 ? "0%" : null;
+      const { x, y, width, height } = element.getBoundingClientRect();
+      element.style.opacity = event.x > x - 16 && event.x < x + width + 16 && event.y > y - 16 && event.y < y + height + 16 ? "0%" : null;
     });
+  }
+  if (event.target === PixelGrid.canvas) {
+    PixelGrid.render_preview(point);
   }
   last_point = point;
 }
+function on_leave(event) {
+  PixelGrid.hide_preview();
+}
 function on_lift(event) {
+  if (dragging_button !== null) {
+    ToolBox.get_active(dragging_button).on_drag(last_point);
+  }
   is_touching = false;
-  dragging_button = false;
+  dragging_button = null;
   document.body.classList.remove("dragging");
   ToolBox.toolbox.style.opacity = null;
   Picker.element.style.opacity = null;
   if (Picker.pick_mode) {
     Picker.pick_mode = false;
     Picker.pick_tool.classList.remove("active");
-    ToolBox.update_cursor();
   }
+  ToolBox.update_cursor();
 }
 function on_scroll(event) {
   event.preventDefault();
+  const origin = Point.view(event.x, event.y);
   const delta = Point.view(
     event.deltaX,
     event.deltaY,
     0
   );
   if (event.ctrlKey || event.metaKey) {
-    const origin = Point.view(event.x, event.y);
     PixelGrid.scale_by(event.deltaY, origin);
   } else {
     PixelGrid.move_by(delta);
   }
+  PixelGrid.render_preview(origin);
 }
 function on_key_down(event) {
   if (event.target !== document.body) return;
@@ -12100,6 +12152,15 @@ function on_key_down(event) {
     case "Meta":
       ToolBox.update_cursor(pan_tool);
       return;
+    case "Alt":
+      ToolBox.picker_cursor();
+      return;
+    case "c":
+      if (event.ctrlKey || event.metaKey) {
+        ToolBox.new_colour_pip();
+        event.preventDefault();
+      }
+      return;
     case "s":
       if (event.ctrlKey || event.metaKey) {
         download_anchor.href = PixelGrid.canvas.toDataURL();
@@ -12112,7 +12173,11 @@ function on_key_down(event) {
   }
 }
 function on_key_up(event) {
-  if (!(event.ctrlKey || event.metaKey)) {
+  if (event.ctrlKey || event.metaKey) {
+    ToolBox.update_cursor(pan_tool);
+  } else if (event.altKey) {
+    ToolBox.picker_cursor();
+  } else {
     ToolBox.update_cursor();
   }
 }
@@ -12121,6 +12186,7 @@ function register_listeners() {
   window.addEventListener("hashchange", on_hash);
   PixelGrid.canvas.addEventListener("pointerdown", on_touch);
   document.addEventListener("pointermove", on_move);
+  PixelGrid.canvas.addEventListener("pointerleave", on_leave);
   document.addEventListener("pointerup", on_lift);
   document.addEventListener("pointercancel", on_lift);
   PixelGrid.canvas.addEventListener("wheel", on_scroll, { passive: false });

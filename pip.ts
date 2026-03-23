@@ -114,7 +114,6 @@ export class Pip extends Tool {
         const size = 24;
         const width = 4;
         const nib = 2;
-        const dot_size = 8;
 
         const canvas = document.createElement('canvas');
         canvas.width = size;
@@ -145,12 +144,15 @@ export class Pip extends Tool {
         context.lineWidth = 1;
         context.stroke();
 
+        const dot_size = 12;
+
         context.beginPath();
-        // context.rect(0, size - dot_size, dot_size - 1, dot_size - 1);
         context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
         context.fillStyle = this.hex;
         context.fill();
         context.stroke();
+
+
 
         return `url(${canvas.toDataURL()}), auto`;
     }

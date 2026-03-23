@@ -27,8 +27,6 @@ export class Block {
     constructor(
         public point: Point,
     ) {
-        // console.log(`init ${this.point.block_id()}`);
-
         const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), snapshot => {
             const pixels: Record<string, string> = snapshot.val();
 
@@ -122,7 +120,7 @@ export class Block {
 
         const block = Block.blocks[point.block_id()];
         if (block) {
-            return block.get_pixel(point.xy());
+            return block.get_pixel(point.pixel().xy());
         } else {
             return Block.BACKGROUND;
         }
@@ -166,7 +164,6 @@ export class Block {
                 this.point.y + Block.SIZE + buffer < PixelGrid.top() ||
                 this.point.y - buffer > PixelGrid.bottom()
             ) {
-                // console.log(`unsub ${this.point.block_id()}`);
                 this.unsubscribe();
             }
         }

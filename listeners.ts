@@ -39,16 +39,15 @@ function on_touch(event: PointerEvent) {
     is_touching = true;
     document.body.classList.add('dragging');
 
-    if (Picker.pick_mode) {
-        Picker.pick(last_point);
+    if (Picker.pick_mode || event.altKey) {
+        Picker.pick(last_point, Picker.pick_mode ? null : event.button);
     } else {
         if (event.ctrlKey || event.metaKey) {
             ToolBox.update_cursor(pan_tool);
         } else if ([0, 1, 2].includes(event.button)) {
             dragging_button = event.button;
             const tool = ToolBox.get_active(dragging_button);
-            ToolBox.update_last_tool(tool);
-            tool.on_drag(last_point);
+            ToolBox.update_cursor(tool);
         }
 
         Picker.set_editing(null);
@@ -59,44 +58,61 @@ function on_move(event: PointerEvent) {
     const point = Point.view(event.x, event.y);
 
     if (is_touching) {
-        if (Picker.pick_mode) {
-            Picker.pick(point);
+        if (Picker.pick_mode || event.altKey) {
+            Picker.pick(point, Picker.pick_mode ? null : dragging_button);
         } else if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else if (dragging_button !== null) {
-            ToolBox.get_active(dragging_button).on_drag(point, last_point);
+            const tool = ToolBox.get_active(dragging_button);
+            tool.on_drag(point, last_point);
         }
 
         [
             ToolBox.toolbox,
             Picker.element,
         ].forEach(element => {
-            const {x, y} = element.getBoundingClientRect();
-            const dx = x - event.x;
-            const dy = y - event.y;
-            element.style.opacity = dx < 16 && dy < 16 ? '0%' : null;
+            const {x, y, width, height} = element.getBoundingClientRect();
+            element.style.opacity =
+                event.x > x - 16 && event.x < x + width + 16 &&
+                event.y > y - 16 && event.y < y + height + 16
+                    ? '0%'
+                    : null;
         });
+    }
+
+    if (event.target === PixelGrid.canvas) {
+        PixelGrid.render_preview(point);
     }
 
     last_point = point;
 }
 
+function on_leave(event: PointerEvent) {
+    PixelGrid.hide_preview();
+}
+
 function on_lift(event: PointerEvent) {
+    if (dragging_button !== null) {
+        ToolBox.get_active(dragging_button).on_drag(last_point);
+    }
+
     is_touching = false;
-    dragging_button = false;
+    dragging_button = null;
     document.body.classList.remove('dragging');
     ToolBox.toolbox.style.opacity = null;
     Picker.element.style.opacity = null;
     if (Picker.pick_mode) {
         Picker.pick_mode = false;
         Picker.pick_tool.classList.remove('active');
-        ToolBox.update_cursor();
     }
+
+    ToolBox.update_cursor();
 }
 
 function on_scroll(event: WheelEvent) {
     event.preventDefault();
 
+    const origin = Point.view(event.x, event.y);
     const delta = Point.view(
         event.deltaX,
         event.deltaY,
@@ -104,11 +120,12 @@ function on_scroll(event: WheelEvent) {
     );
 
     if (event.ctrlKey || event.metaKey) {
-        const origin = Point.view(event.x, event.y);
         PixelGrid.scale_by(event.deltaY, origin);
     } else {
         PixelGrid.move_by(delta);
     }
+
+    PixelGrid.render_preview(origin);
 }
 
 function on_key_down(event: KeyboardEvent) {
@@ -144,6 +161,15 @@ function on_key_down(event: KeyboardEvent) {
         case 'Meta':
             ToolBox.update_cursor(pan_tool);
             return;
+        case 'Alt':
+            ToolBox.picker_cursor();
+            return;
+        case 'c':
+            if (event.ctrlKey || event.metaKey) {
+                ToolBox.new_colour_pip();
+                event.preventDefault();
+            }
+            return;
         case 's':
             if (event.ctrlKey || event.metaKey) {
                 download_anchor.href = PixelGrid.canvas.toDataURL();
@@ -157,7 +183,11 @@ function on_key_down(event: KeyboardEvent) {
 }
 
 function on_key_up(event: KeyboardEvent) {
-    if (!(event.ctrlKey || event.metaKey)) {
+    if (event.ctrlKey || event.metaKey) {
+        ToolBox.update_cursor(pan_tool);
+    } else if (event.altKey) {
+        ToolBox.picker_cursor();
+    } else {
         ToolBox.update_cursor();
     }
 }
@@ -168,6 +198,7 @@ export function register_listeners() {
 
     PixelGrid.canvas.addEventListener('pointerdown', on_touch);
     document.addEventListener('pointermove', on_move);
+    PixelGrid.canvas.addEventListener('pointerleave', on_leave);
     document.addEventListener('pointerup', on_lift);
     document.addEventListener('pointercancel', on_lift);
     PixelGrid.canvas.addEventListener('wheel', on_scroll, {passive: false});

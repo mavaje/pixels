@@ -1,6 +1,9 @@
 import {Block} from "./db/block";
 import {Point} from "./point";
 import {DEBUG} from "./config";
+import {ToolBox} from "./tool-box";
+import {Pip} from "./pip";
+import {Picker} from "./picker";
 
 export class PixelGrid {
 
@@ -13,7 +16,9 @@ export class PixelGrid {
     static canvas: HTMLCanvasElement = document.getElementById('pixel-grid') as HTMLCanvasElement;
     private static context: CanvasRenderingContext2D;
 
-    private static debug_layer = document.getElementById('block-borders');
+    private static ghost_layer = document.getElementById('ghost-layer');
+
+    private static pixel_preview = document.getElementById('pixel-preview');
 
     static resize() {
         const {width, height} = document.body.getBoundingClientRect();
@@ -88,6 +93,7 @@ export class PixelGrid {
         Object.values(Block.blocks).forEach(block => {
             block.render();
         });
+        // this.render_preview();
     }
 
     static render_block(block: Block): void {
@@ -108,9 +114,27 @@ export class PixelGrid {
             block.debug_element.style.height = `${size - 2}px`;
 
             if (!block.debug_element.isConnected) {
-                this.debug_layer.append(block.debug_element);
+                this.ghost_layer.append(block.debug_element);
             }
         }
+    }
+
+    static render_preview(cursor: Point) {
+        const visible = Picker.pick_mode || (ToolBox.last_tool instanceof Pip);
+
+        this.pixel_preview.classList.toggle('hidden', !visible);
+
+        if (visible) {
+            cursor = cursor.grid().floor().view();
+            this.pixel_preview.style.width = `${this.scale - 2}px`;
+            this.pixel_preview.style.height = `${this.scale - 2}px`;
+            this.pixel_preview.style.left = `${cursor.x - 1}px`;
+            this.pixel_preview.style.top = `${cursor.y - 1}px`;
+        }
+    }
+
+    static hide_preview() {
+        this.pixel_preview.classList.add('hidden');
     }
 
     static move_to(centre: Point) {

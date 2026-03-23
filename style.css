@@ -46,19 +46,25 @@ body.dragging canvas#pixel-grid {
     cursor: var(--cursor-down);
 }
 
-#block-borders {
+#ghost-layer {
     position: absolute;
     width: 100%;
     height: 100%;
     pointer-events: none;
 }
 
-#block-borders .block {
+#pixel-preview {
+    position: absolute;
+    border: 2px solid white;
+    mix-blend-mode: difference;
+}
+
+#ghost-layer .block {
     position: absolute;
     border: 1px solid red;
 }
 
-#block-borders .block .label {
+#ghost-layer .block .label {
     position: sticky;
     display: inline;
     color: red;
@@ -235,7 +241,9 @@ body.dragging canvas#pixel-grid {
     color: black;
     font-size: 10px;
     font-family: monospace;
+    font-weight: bold;
     transform: translate(var(--x), 0);
+    box-shadow: 0 2px 4px #0000007f;
 }
 
 #toolbox .badges .badge.button-0 {
@@ -330,7 +338,6 @@ svg.hidden {
 }
 
 body.dragging .glass {
-    /*opacity: 0;*/
     pointer-events: none;
 }
 

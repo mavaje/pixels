@@ -2,7 +2,6 @@ import {Pip} from "./pip";
 import {Slider} from "./slider";
 import {Colour, HSL, RGB} from "./colour";
 import {ToolBox} from "./tool-box";
-import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
 import {Block} from "./db/block";
 
@@ -37,11 +36,14 @@ export class Picker {
             this.set_hex(hex);
             this.sliders.forEach(slider => slider.set_value(hex));
         });
+        this.hex_input.addEventListener('keypress', event => {
+            if (event.key === 'Enter') {
+                this.hex_input.blur();
+            }
+        });
 
         this.pick_tool.addEventListener('click', () => {
-            this.pick_mode = true;
-            this.pick_tool.classList.add('active');
-            PixelGrid.canvas.style.setProperty('--cursor', 'crosshair');
+            this.start_picking();
         });
 
         this.remove_pip.addEventListener('click', () => {
@@ -74,9 +76,24 @@ export class Picker {
         this.hex_input.value = hex;
     }
 
-    static pick(point: Point) {
+    static start_picking() {
+        this.element.classList.add('animate');
+        this.pick_mode = true;
+        this.pick_tool.classList.add('active');
+        ToolBox.update_cursor();
+    }
+
+    static pick(point: Point, button: number) {
+        this.element.classList.add('animate');
         const hex = Block.pixel_at(point);
-        if (hex !== this.pip.hex) {
+
+        if (!this.pip && button !== null) {
+            if (ToolBox.active[button] instanceof Pip) {
+                this.pip = ToolBox.active[button];
+            }
+        }
+
+        if (this.pip && hex !== this.pip.hex) {
             this.set_hex(hex);
             this.sliders.forEach(slider => slider.set_value(hex));
         }

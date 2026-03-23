@@ -26,11 +26,7 @@ export class ToolBox {
 
         this.update_last_tool(this.active[0]);
 
-        this.add_pip_button.addEventListener('click', () => {
-            const pip = this.add_colour_pip(Picker.pip?.hex ?? '#000000', true);
-            Picker.set_editing(pip);
-            ToolBox.set_active(pip);
-        });
+        this.add_pip_button.addEventListener('click', () => this.new_colour_pip());
     }
 
     static tools(): Tool[] {
@@ -87,6 +83,12 @@ export class ToolBox {
         return pip;
     }
 
+    static new_colour_pip() {
+        const pip = this.add_colour_pip(Picker.pip?.hex ?? '#000000', true);
+        Picker.set_editing(pip);
+        ToolBox.set_active(pip);
+    }
+
     static remove_colour_pip(pip: Pip, animate: boolean = false) {
         let active: number = null;
         this.active.forEach((tool, i) => {
@@ -128,7 +130,11 @@ export class ToolBox {
     }
 
     static get_active(button: number): Tool {
-        return this.active[button] ?? pan_tool;
+        if (this.active[button]) {
+            return this.last_tool = this.active[button];
+        } else {
+            return pan_tool;
+        }
     }
 
     static update_tools() {
@@ -145,10 +151,17 @@ export class ToolBox {
     }
 
     static update_cursor(tool: Tool = this.last_tool) {
-        if (tool) {
+        if (Picker.pick_mode) {
+            this.picker_cursor();
+        } else if (tool) {
             PixelGrid.canvas.style.setProperty('--cursor', tool.cursor());
             PixelGrid.canvas.style.setProperty('--cursor-down', tool.cursor_down());
         }
+    }
+
+    static picker_cursor() {
+        PixelGrid.canvas.style.setProperty('--cursor', 'crosshair');
+        PixelGrid.canvas.style.setProperty('--cursor-down', 'var(--cursor)');
     }
 
     static save_palette_cookie() {
