@@ -11199,6 +11199,12 @@ var init_point = __esm({
       static view(x, y, w = 1) {
         return new _Point(x, y, w, "view");
       }
+      static average(points, context = points[0].context) {
+        return points.reduce(
+          (avg, p) => avg.plus(p),
+          new _Point(0, 0, 1, context)
+        ).scale(1 / points.length);
+      }
       in_context(context) {
         switch (context) {
           case "view":
@@ -11257,6 +11263,9 @@ var init_point = __esm({
           this.w,
           this.context
         );
+      }
+      distance() {
+        return Math.sqrt(this.x ** 2 + this.y ** 2);
       }
       scale(s) {
         return new _Point(
@@ -12046,32 +12055,48 @@ function on_hash(event) {
   }
 }
 function on_touch(event) {
-  last_point = Point.view(event.x, event.y);
-  initial_point = PixelGrid.centre.plus(last_point).view();
+  const point = Point.view(event.x, event.y);
   is_touching = true;
   document.body.classList.add("dragging");
   if (Picker.pick_mode || event.altKey) {
-    Picker.pick(last_point, Picker.pick_mode ? null : event.button);
+    Picker.pick(point, Picker.pick_mode ? null : event.button);
   } else {
     if (event.ctrlKey || event.metaKey) {
       ToolBox.update_cursor(pan_tool);
     } else if ([0, 1, 2].includes(event.button)) {
-      dragging_button = event.button;
-      const tool = ToolBox.get_active(dragging_button);
+      active_button = event.button;
+      const tool = ToolBox.get_active(active_button);
       ToolBox.update_cursor(tool);
+      if (event.pointerType !== "touch") {
+        tool.on_drag(point);
+      }
     }
     Picker.set_editing(null);
   }
+  last_point = point;
+  pointers[event.pointerId] = [point];
 }
 function on_move(event) {
   const point = Point.view(event.x, event.y);
+  pointers[event.pointerId] ??= [];
+  pointers[event.pointerId].unshift(point);
   if (is_touching) {
-    if (Picker.pick_mode || event.altKey) {
-      Picker.pick(point, Picker.pick_mode ? null : dragging_button);
+    if (Object.entries(pointers).length > 1) {
+      const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
+      const centre = Point.average(valid_pointers.map((p) => p[0]));
+      const last_centre = Point.average(valid_pointers.map((p) => p[1]));
+      PixelGrid.move_by(last_centre.view().minus(centre));
+      if (valid_pointers.length >= 2) {
+        const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
+        const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
+        PixelGrid.scale_by(pinch / last_pinch, centre);
+      }
+    } else if (Picker.pick_mode || event.altKey) {
+      Picker.pick(point, Picker.pick_mode ? null : active_button);
     } else if (event.ctrlKey || event.metaKey) {
-      PixelGrid.move_to(initial_point.minus(point));
-    } else if (dragging_button !== null) {
-      const tool = ToolBox.get_active(dragging_button);
+      PixelGrid.move_by(last_point.view().minus(point));
+    } else if (active_button !== null) {
+      const tool = ToolBox.get_active(active_button);
       tool.on_drag(point, last_point);
     }
     [
@@ -12079,7 +12104,13 @@ function on_move(event) {
       Picker.element
     ].forEach((element) => {
       const { x, y, width, height } = element.getBoundingClientRect();
-      element.style.opacity = event.x > x - 16 && event.x < x + width + 16 && event.y > y - 16 && event.y < y + height + 16 ? "0%" : null;
+      if (Object.values(pointers).every(
+        ([_, point2]) => point2.x > x - 16 && point2.x < x + width + 16 && point2.y > y - 16 && point2.y < y + height + 16
+      )) {
+        element.style.opacity = "0%";
+      } else {
+        element.style.opacity = null;
+      }
     });
   }
   if (event.target === PixelGrid.canvas) {
@@ -12091,14 +12122,17 @@ function on_leave(event) {
   PixelGrid.hide_preview();
 }
 function on_lift(event) {
-  if (dragging_button !== null) {
-    ToolBox.get_active(dragging_button).on_drag(last_point);
+  if (active_button !== null) {
+    ToolBox.get_active(active_button).on_drag(last_point);
   }
-  is_touching = false;
-  dragging_button = null;
-  document.body.classList.remove("dragging");
-  ToolBox.toolbox.style.opacity = null;
-  Picker.element.style.opacity = null;
+  delete pointers[event.pointerId];
+  if (Object.entries(pointers).length === 0) {
+    is_touching = false;
+    active_button = null;
+    document.body.classList.remove("dragging");
+    ToolBox.toolbox.style.opacity = null;
+    Picker.element.style.opacity = null;
+  }
   if (Picker.pick_mode) {
     Picker.pick_mode = false;
     Picker.pick_tool.classList.remove("active");
@@ -12196,7 +12230,7 @@ function register_listeners() {
   on_resize();
   on_hash();
 }
-var download_anchor, is_touching, dragging_button, initial_point, last_point;
+var download_anchor, is_touching, active_button, last_point, pointers;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
@@ -12206,9 +12240,9 @@ var init_listeners = __esm({
     init_pan_tool();
     download_anchor = document.getElementById("downloader");
     is_touching = false;
-    dragging_button = null;
-    initial_point = null;
+    active_button = null;
     last_point = null;
+    pointers = {};
   }
 });
 

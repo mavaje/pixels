@@ -22,6 +22,13 @@ export class Point {
         return new Point(x, y, w, 'view');
     }
 
+    public static average(points: Point[], context: PointContext = points[0].context): Point {
+        return points.reduce(
+            (avg, p) => avg.plus(p),
+            new Point(0, 0, 1, context),
+        ).scale(1 / points.length);
+    }
+
     public in_context(context: PointContext) {
         switch (context) {
             case 'view':
@@ -96,6 +103,10 @@ export class Point {
             this.w,
             this.context,
         );
+    }
+
+    public distance(): number {
+        return Math.sqrt(this.x ** 2 + this.y ** 2);
     }
 
     public scale(s: number): Point {
