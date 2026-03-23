@@ -11736,7 +11736,7 @@ var init_pip = __esm({
         const pip_x = x + width / 2;
         let offset = Math.round((event.x - pip_x) / width);
         const index = ToolBox.pips.indexOf(this);
-        return Math.min(Math.max(offset, -index), 9 - index);
+        return Math.min(Math.max(offset, -index), ToolBox.pips.length - 1 - index);
       }
       set_hex(hex, animate = true) {
         this.hex = hex;
