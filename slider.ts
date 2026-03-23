@@ -66,7 +66,7 @@ export class Slider<S extends ColourSpace = ColourSpace> {
     on_slide(event: PointerEvent, animate: boolean = true) {
         let value = (event.x
             - this.element.getBoundingClientRect().x
-            - 18) / 324;
+            - 18) / 240;
         value = Math.min(Math.max(value, 0), 1);
 
         let hex: string;

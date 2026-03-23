@@ -39,27 +39,43 @@ function on_touch(event: PointerEvent) {
     is_touching = true;
     document.body.classList.add('dragging');
 
-    if (event.ctrlKey || event.metaKey) {
-        ToolBox.update_cursor(pan_tool);
-    } else if ([0, 1, 2].includes(event.button)) {
-        dragging_button = event.button;
-        const tool = ToolBox.get_active(dragging_button);
-        ToolBox.update_last_tool(tool);
-        tool.on_drag(last_point);
-    }
+    if (Picker.pick_mode) {
+        Picker.pick(last_point);
+    } else {
+        if (event.ctrlKey || event.metaKey) {
+            ToolBox.update_cursor(pan_tool);
+        } else if ([0, 1, 2].includes(event.button)) {
+            dragging_button = event.button;
+            const tool = ToolBox.get_active(dragging_button);
+            ToolBox.update_last_tool(tool);
+            tool.on_drag(last_point);
+        }
 
-    Picker.set_editing(null);
+        Picker.set_editing(null);
+    }
 }
 
 function on_move(event: PointerEvent) {
     const point = Point.view(event.x, event.y);
 
     if (is_touching) {
-        if (event.ctrlKey || event.metaKey) {
+        if (Picker.pick_mode) {
+            Picker.pick(point);
+        } else if (event.ctrlKey || event.metaKey) {
             PixelGrid.move_to(initial_point.minus(point));
         } else if (dragging_button !== null) {
             ToolBox.get_active(dragging_button).on_drag(point, last_point);
         }
+
+        [
+            ToolBox.toolbox,
+            Picker.element,
+        ].forEach(element => {
+            const {x, y} = element.getBoundingClientRect();
+            const dx = x - event.x;
+            const dy = y - event.y;
+            element.style.opacity = dx < 16 && dy < 16 ? '0%' : null;
+        });
     }
 
     last_point = point;
@@ -69,6 +85,13 @@ function on_lift(event: PointerEvent) {
     is_touching = false;
     dragging_button = false;
     document.body.classList.remove('dragging');
+    ToolBox.toolbox.style.opacity = null;
+    Picker.element.style.opacity = null;
+    if (Picker.pick_mode) {
+        Picker.pick_mode = false;
+        Picker.pick_tool.classList.remove('active');
+        ToolBox.update_cursor();
+    }
 }
 
 function on_scroll(event: WheelEvent) {
@@ -103,7 +126,7 @@ function on_key_down(event: KeyboardEvent) {
         case '9':
         case '0':
             const index = (Number.parseInt(event.key) + 9) % 10;
-            ToolBox.set_active(ToolBox.pips[index], 0);
+            ToolBox.set_active(ToolBox.pips[index]);
             return;
         case 'ArrowLeft':
             PixelGrid.move_by(Point.view(-16, 0, 0));

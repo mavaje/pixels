@@ -8,7 +8,7 @@ class PanTool extends Tool {
     badge_container = document.getElementById('pan-badges') as HTMLDivElement;
 
     initialise() {
-        this.element.classList.add('animated');
+        this.element.classList.add('animate');
         this.badge_container.classList.add('badge');
 
         let clicked = false;

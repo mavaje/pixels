@@ -43,7 +43,7 @@ export class Pip extends Tool {
                     } else {
                         x = 0;
                     }
-                    pip.element.classList.add('animated');
+                    pip.element.classList.add('animate');
                     pip.element.style.setProperty('--x', `${x}px`);
                 });
             }
@@ -67,7 +67,7 @@ export class Pip extends Tool {
             clicked = false;
             dragged = false;
             this.element.style.removeProperty('--x');
-            this.element.classList.remove('animated', 'dragging');
+            this.element.classList.remove('animate', 'dragging');
         });
         this.element.addEventListener('pointerup', event => {
             if (clicked) {
@@ -111,29 +111,31 @@ export class Pip extends Tool {
     }
 
     cursor(): string {
+        const size = 24;
+        const width = 4;
+        const nib = 2;
+        const dot_size = 8;
+
         const canvas = document.createElement('canvas');
-        canvas.width = 16;
-        canvas.height = 16;
+        canvas.width = size;
+        canvas.height = size;
         const context = canvas.getContext('2d');
 
         context.translate(0.5, 0.5);
 
-        const width = 3;
-
         context.beginPath();
         context.moveTo(0, 0);
-        context.lineTo(1 + width, 1);
-        context.lineTo(1, 1 + width);
+        context.lineTo(nib + width, nib);
+        context.lineTo(nib, nib + width);
         // context.bezierCurveTo(6, 4, 4, 6, 2, 6);
         context.closePath();
 
-        context.moveTo(1 + width, 1);
-        context.lineTo(15, 15 - width);
+        context.moveTo(nib + width, nib);
+        context.lineTo(size - 1, size - 1 - width);
         // context.bezierCurveTo(23, 21, 21, 23, 19, 23);
-        context.lineTo(15 - width, 15);
-        context.lineTo(1, 1 + width);
+        context.lineTo(size - 1 - width, size - 1);
+        context.lineTo(nib, nib + width);
         // context.bezierCurveTo(4, 6, 6, 4, 6, 2);
-        context.lineTo(1 + width, 1);
         context.closePath();
 
         context.fillStyle = 'black';
@@ -143,9 +145,12 @@ export class Pip extends Tool {
         context.lineWidth = 1;
         context.stroke();
 
+        context.beginPath();
+        // context.rect(0, size - dot_size, dot_size - 1, dot_size - 1);
+        context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
         context.fillStyle = this.hex;
-        context.fillRect(0, 8, 7, 7);
-        context.strokeRect(0, 8, 7, 7);
+        context.fill();
+        context.stroke();
 
         return `url(${canvas.toDataURL()}), auto`;
     }

@@ -34,9 +34,9 @@ export class Colour {
         return {r, g, b};
     }
 
-    static rgb_to_hex({r, g, b}: RGB): string {
+    static rgb_to_hex({r, g, b}: RGB, bytes: boolean = false): string {
         return '#' + [r, g, b]
-            .map(v => Math.max(0, Math.min(Math.floor(v * 256), 255)))
+            .map(v => Math.max(0, Math.min(Math.floor(v * (bytes ? 1 : 256)), 255)))
             .map(b => b.toString(16).padStart(2, '0'))
             .join('');
     }

@@ -3,10 +3,11 @@ import {db} from "./db";
 import {PixelGrid} from "../pixel-grid";
 import {Point} from "../point";
 import {DEBUG} from "../config";
+import {Colour} from "../colour";
 
 export class Block {
 
-    public static readonly BACKGROUND = 'white';
+    public static readonly BACKGROUND = '#ffffff';
     public static readonly SIZE = 256;
 
     public static readonly PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
@@ -17,7 +18,7 @@ export class Block {
     } = {};
 
     public canvas = new OffscreenCanvas(Block.SIZE, Block.SIZE);
-    public context = this.canvas.getContext('2d');
+    public context = this.canvas.getContext('2d', {willReadFrequently: true});
 
     public debug_element: HTMLDivElement;
 
@@ -116,6 +117,17 @@ export class Block {
         }
     }
 
+    static pixel_at(point: Point) {
+        point = point.grid();
+
+        const block = Block.blocks[point.block_id()];
+        if (block) {
+            return block.get_pixel(point.xy());
+        } else {
+            return Block.BACKGROUND;
+        }
+    }
+
     clear() {
         this.context.fillStyle = Block.BACKGROUND;
         this.context.fillRect(0, 0, Block.SIZE, Block.SIZE);
@@ -127,6 +139,14 @@ export class Block {
     ) {
         this.context.fillStyle = `#${hex}`;
         this.context.fillRect(x, y, 1, 1);
+    }
+
+    get_pixel(
+        [x, y]: [number, number],
+    ): string {
+        const {data} = this.context.getImageData(x, y, 1, 1);
+        const [r, g, b] = data;
+        return Colour.rgb_to_hex({r, g, b}, true);
     }
 
     render(): void {

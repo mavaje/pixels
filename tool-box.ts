@@ -3,6 +3,7 @@ import {Colour} from "./colour";
 import {pan_tool} from "./pan-tool";
 import {Tool} from "./tool";
 import {PixelGrid} from "./pixel-grid";
+import {Picker} from "./picker";
 
 export class ToolBox {
 
@@ -21,13 +22,15 @@ export class ToolBox {
         this.load_cookies();
         if (this.pips.length === 0) this.load_default_palette();
 
-        if (this.active.length === 0) this.set_active(this.pips[0], 0);
+        if (this.active.length === 0) this.set_active(this.pips[0]);
 
         this.update_last_tool(this.active[0]);
 
-        // this.add_pip_button.addEventListener('click', () => {
-        //     this.add_colour_pip('#000000', true);
-        // });
+        this.add_pip_button.addEventListener('click', () => {
+            const pip = this.add_colour_pip(Picker.pip?.hex ?? '#000000', true);
+            Picker.set_editing(pip);
+            ToolBox.set_active(pip);
+        });
     }
 
     static tools(): Tool[] {
@@ -74,9 +77,50 @@ export class ToolBox {
         pip.initialise();
         this.pips.push(pip);
         this.toolbox.insertBefore(pip.element, this.add_pip_button);
+        this.save_palette_cookie();
+
+        if (animate) {
+            pip.element.classList.add('slide-in-out');
+            setTimeout(() => pip.element.classList.remove('slide-in-out'));
+        }
+
+        return pip;
     }
 
-    static set_active(tool: Tool, button: number) {
+    static remove_colour_pip(pip: Pip, animate: boolean = false) {
+        let active: number = null;
+        this.active.forEach((tool, i) => {
+            if (tool === pip) {
+                active ??= i;
+                delete this.active[i];
+            }
+        });
+
+        const index = this.pips.indexOf(pip);
+        this.pips.splice(index, 1);
+
+        const replacement = this.pips[index - 1];
+        Picker.set_editing(replacement);
+
+        if (active !== null) {
+            this.set_active(replacement, active);
+        } else if (this.last_tool === pip) {
+            this.update_last_tool(pan_tool);
+            this.update_tools();
+            this.save_button_cookie();
+        }
+
+        this.save_palette_cookie();
+
+        if (animate) {
+            pip.element.classList.add('animate', 'slide-in-out');
+            setTimeout(() => pip.element.remove(), 200);
+        } else {
+            pip.element.remove();
+        }
+    }
+
+    static set_active(tool: Tool, button: number = 0) {
         this.active[button] = tool;
         this.update_last_tool(tool);
         this.update_tools();
@@ -101,8 +145,10 @@ export class ToolBox {
     }
 
     static update_cursor(tool: Tool = this.last_tool) {
-        PixelGrid.canvas.style.setProperty('--cursor', tool.cursor());
-        PixelGrid.canvas.style.setProperty('--cursor-down', tool.cursor_down());
+        if (tool) {
+            PixelGrid.canvas.style.setProperty('--cursor', tool.cursor());
+            PixelGrid.canvas.style.setProperty('--cursor-down', tool.cursor_down());
+        }
     }
 
     static save_palette_cookie() {

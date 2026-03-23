@@ -95,7 +95,7 @@ body.dragging canvas#pixel-grid {
     --size: 32px;
 }
 
-.button.animated {
+.button.animate {
     transition-property: --size;
 }
 
@@ -166,6 +166,10 @@ body.dragging canvas#pixel-grid {
     );
 }
 
+.icon-pick {
+    clip-path: url(#icon-pick)
+}
+
 .pip {
     --hex: transparent;
     --x: 0;
@@ -175,8 +179,14 @@ body.dragging canvas#pixel-grid {
     cursor: pointer;
 }
 
-.pip.animated {
-    transition-property: --x;
+.pip.animate {
+    transition-property: --x, margin, opacity;
+}
+
+.pip.slide-in-out {
+    margin-right: -36px;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .pip::before {
@@ -254,15 +264,11 @@ body.dragging canvas#pixel-grid {
 #picker-tools {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
-}
-
-#picker-tools .button {
 }
 
 .slider {
     position: relative;
-    width: 360px;
+    width: 276px;
     height: 36px;
     cursor: pointer;
 }
@@ -310,6 +316,10 @@ body.dragging canvas#pixel-grid {
     pointer-events: none;
 }
 
+svg.hidden {
+    position: absolute;
+}
+
 .glass {
     background: #7f7f7fbf;
     border-top: 1px solid #ffffff7f;
@@ -340,6 +350,8 @@ input {
     font-size: 16px;
     font-family: monospace;
     text-transform: uppercase;
+    flex: 1;
+    width: 112px;
     height: 20px;
     margin: 6px;
     padding: 0 4px;

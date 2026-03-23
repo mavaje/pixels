@@ -2,6 +2,9 @@ import {Pip} from "./pip";
 import {Slider} from "./slider";
 import {Colour, HSL, RGB} from "./colour";
 import {ToolBox} from "./tool-box";
+import {PixelGrid} from "./pixel-grid";
+import {Point} from "./point";
+import {Block} from "./db/block";
 
 export class Picker {
 
@@ -10,6 +13,10 @@ export class Picker {
     static pip: Pip = null;
     static sliders: Slider[] = [];
     static hex_input = document.getElementById('hex-input') as HTMLInputElement;
+    static pick_tool = document.getElementById('pick-tool');
+    static remove_pip = document.getElementById('remove-pip');
+
+    static pick_mode: boolean = false;
 
     static rgb: RGB;
     static hsl: HSL;
@@ -29,6 +36,16 @@ export class Picker {
             const hex = Colour.clean_hex(this.hex_input.value, true);
             this.set_hex(hex);
             this.sliders.forEach(slider => slider.set_value(hex));
+        });
+
+        this.pick_tool.addEventListener('click', () => {
+            this.pick_mode = true;
+            this.pick_tool.classList.add('active');
+            PixelGrid.canvas.style.setProperty('--cursor', 'crosshair');
+        });
+
+        this.remove_pip.addEventListener('click', () => {
+            ToolBox.remove_colour_pip(this.pip, true);
         });
     }
 
@@ -55,5 +72,13 @@ export class Picker {
         this.hsl = Colour.hex_to_hsl(hex);
         ToolBox.save_palette_cookie();
         this.hex_input.value = hex;
+    }
+
+    static pick(point: Point) {
+        const hex = Block.pixel_at(point);
+        if (hex !== this.pip.hex) {
+            this.set_hex(hex);
+            this.sliders.forEach(slider => slider.set_value(hex));
+        }
     }
 }

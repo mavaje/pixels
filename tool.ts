@@ -6,12 +6,7 @@ export abstract class Tool {
     element: HTMLDivElement;
     badge_container: HTMLDivElement;
 
-    active: boolean = false;
-    active_button?: number = null;
-
     activate(button: number = null) {
-        this.active = true;
-        this.active_button = button;
         this.element.classList.add('active');
         if (ToolBox.active.length > 1) {
             const badge = document.createElement('div');
@@ -22,8 +17,6 @@ export abstract class Tool {
     }
 
     deactivate() {
-        this.active = false;
-        this.active_button = null;
         this.element.classList.remove('active');
         this.badge_container.innerHTML = '';
     }

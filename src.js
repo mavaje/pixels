@@ -10980,6 +10980,77 @@ var init_config = __esm({
   }
 });
 
+// colour.ts
+var Colour;
+var init_colour = __esm({
+  "colour.ts"() {
+    Colour = class _Colour {
+      static clean_hex(hex, hash = false) {
+        if (hash) return "#" + this.clean_hex(hex, false);
+        hex = hex.replace(/[^\da-f]/gi, "");
+        switch (hex.length) {
+          case 0:
+            return "000000";
+          case 1:
+            return hex.repeat(6);
+          case 2:
+            return hex.repeat(3);
+          case 3:
+          case 4:
+          case 5:
+            const [r, g, b] = hex;
+            return r + r + g + g + b + b;
+          default:
+            return hex.slice(0, 6);
+        }
+      }
+      static hex_to_rgb(hex) {
+        hex = this.clean_hex(hex);
+        const [r, g, b] = [0, 2, 4].map((i) => hex.slice(i, i + 2)).map((x) => (Number.parseInt(x, 16) || 0) / 255);
+        return { r, g, b };
+      }
+      static rgb_to_hex({ r, g, b }, bytes = false) {
+        return "#" + [r, g, b].map((v) => Math.max(0, Math.min(Math.floor(v * (bytes ? 1 : 256)), 255))).map((b2) => b2.toString(16).padStart(2, "0")).join("");
+      }
+      static rgb_to_hsl({ r, g, b }) {
+        const min = Math.min(r, g, b);
+        const max = Math.max(r, g, b);
+        const range = max - min;
+        const l = (min + max) / 2;
+        const scale = 1 - Math.abs(2 * l - 1);
+        const s = scale > 0 ? range / scale : 0;
+        const h = min === max ? 0 : {
+          [r]: (g - b) / (6 * range) + 1,
+          [g]: (b - r) / (6 * range) + 1 / 3,
+          [b]: (r - g) / (6 * range) + 2 / 3
+        }[max] % 1;
+        return { h, s, l };
+      }
+      static hsl_to_rgb({ h, s, l }) {
+        const c = s * (1 - Math.abs(2 * l - 1));
+        const x = c * (1 - Math.abs(6 * h % 2 - 1));
+        const min = l - c / 2;
+        const mid = min + x;
+        const max = min + c;
+        return [
+          { r: max, g: mid, b: min },
+          { r: mid, g: max, b: min },
+          { r: min, g: max, b: mid },
+          { r: min, g: mid, b: max },
+          { r: mid, g: min, b: max },
+          { r: max, g: min, b: mid }
+        ][Math.floor(h % 1 * 6)];
+      }
+      static hex_to_hsl(hex) {
+        return _Colour.rgb_to_hsl(_Colour.hex_to_rgb(hex));
+      }
+      static hsl_to_hex(hsl) {
+        return _Colour.rgb_to_hex(_Colour.hsl_to_rgb(hsl));
+      }
+    };
+  }
+});
+
 // db/block.ts
 var Block;
 var init_block = __esm({
@@ -10988,11 +11059,12 @@ var init_block = __esm({
     init_db();
     init_pixel_grid();
     init_config();
+    init_colour();
     Block = class _Block {
       constructor(point) {
         this.point = point;
         this.canvas = new OffscreenCanvas(_Block.SIZE, _Block.SIZE);
-        this.context = this.canvas.getContext("2d");
+        this.context = this.canvas.getContext("2d", { willReadFrequently: true });
         const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), (snapshot) => {
           const pixels = snapshot.val();
           if (!pixels || !(typeof pixels === "object")) return;
@@ -11023,7 +11095,7 @@ var init_block = __esm({
         }
       }
       static {
-        this.BACKGROUND = "white";
+        this.BACKGROUND = "#ffffff";
       }
       static {
         this.SIZE = 256;
@@ -11072,6 +11144,15 @@ var init_block = __esm({
           await update(ref(db, `pixels/${block_id}`), pixels);
         }
       }
+      static pixel_at(point) {
+        point = point.grid();
+        const block = _Block.blocks[point.block_id()];
+        if (block) {
+          return block.get_pixel(point.xy());
+        } else {
+          return _Block.BACKGROUND;
+        }
+      }
       clear() {
         this.context.fillStyle = _Block.BACKGROUND;
         this.context.fillRect(0, 0, _Block.SIZE, _Block.SIZE);
@@ -11079,6 +11160,11 @@ var init_block = __esm({
       set_pixel([x, y], hex) {
         this.context.fillStyle = `#${hex}`;
         this.context.fillRect(x, y, 1, 1);
+      }
+      get_pixel([x, y]) {
+        const { data } = this.context.getImageData(x, y, 1, 1);
+        const [r, g, b] = data;
+        return Colour.rgb_to_hex({ r, g, b }, true);
       }
       render() {
         const buffer = _Block.SIZE;
@@ -11365,77 +11451,6 @@ var init_pixel_grid = __esm({
   }
 });
 
-// colour.ts
-var Colour;
-var init_colour = __esm({
-  "colour.ts"() {
-    Colour = class _Colour {
-      static clean_hex(hex, hash = false) {
-        if (hash) return "#" + this.clean_hex(hex, false);
-        hex = hex.replace(/[^\da-f]/gi, "");
-        switch (hex.length) {
-          case 0:
-            return "000000";
-          case 1:
-            return hex.repeat(6);
-          case 2:
-            return hex.repeat(3);
-          case 3:
-          case 4:
-          case 5:
-            const [r, g, b] = hex;
-            return r + r + g + g + b + b;
-          default:
-            return hex.slice(0, 6);
-        }
-      }
-      static hex_to_rgb(hex) {
-        hex = this.clean_hex(hex);
-        const [r, g, b] = [0, 2, 4].map((i) => hex.slice(i, i + 2)).map((x) => (Number.parseInt(x, 16) || 0) / 255);
-        return { r, g, b };
-      }
-      static rgb_to_hex({ r, g, b }) {
-        return "#" + [r, g, b].map((v) => Math.max(0, Math.min(Math.floor(v * 256), 255))).map((b2) => b2.toString(16).padStart(2, "0")).join("");
-      }
-      static rgb_to_hsl({ r, g, b }) {
-        const min = Math.min(r, g, b);
-        const max = Math.max(r, g, b);
-        const range = max - min;
-        const l = (min + max) / 2;
-        const scale = 1 - Math.abs(2 * l - 1);
-        const s = scale > 0 ? range / scale : 0;
-        const h = min === max ? 0 : {
-          [r]: (g - b) / (6 * range) + 1,
-          [g]: (b - r) / (6 * range) + 1 / 3,
-          [b]: (r - g) / (6 * range) + 2 / 3
-        }[max] % 1;
-        return { h, s, l };
-      }
-      static hsl_to_rgb({ h, s, l }) {
-        const c = s * (1 - Math.abs(2 * l - 1));
-        const x = c * (1 - Math.abs(6 * h % 2 - 1));
-        const min = l - c / 2;
-        const mid = min + x;
-        const max = min + c;
-        return [
-          { r: max, g: mid, b: min },
-          { r: mid, g: max, b: min },
-          { r: min, g: max, b: mid },
-          { r: min, g: mid, b: max },
-          { r: mid, g: min, b: max },
-          { r: max, g: min, b: mid }
-        ][Math.floor(h % 1 * 6)];
-      }
-      static hex_to_hsl(hex) {
-        return _Colour.rgb_to_hsl(_Colour.hex_to_rgb(hex));
-      }
-      static hsl_to_hex(hsl) {
-        return _Colour.rgb_to_hex(_Colour.hsl_to_rgb(hsl));
-      }
-    };
-  }
-});
-
 // slider.ts
 var Slider;
 var init_slider = __esm({
@@ -11489,7 +11504,7 @@ var init_slider = __esm({
         if (move) this.knob.style.setProperty("--value", String(value));
       }
       on_slide(event, animate = true) {
-        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 324;
+        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
         value = Math.min(Math.max(value, 0), 1);
         let hex;
         switch (this.space) {
@@ -11531,6 +11546,8 @@ var init_picker = __esm({
     init_slider();
     init_colour();
     init_tool_box();
+    init_pixel_grid();
+    init_block();
     Picker = class _Picker {
       static {
         this.element = document.getElementById("picker");
@@ -11543,6 +11560,15 @@ var init_picker = __esm({
       }
       static {
         this.hex_input = document.getElementById("hex-input");
+      }
+      static {
+        this.pick_tool = document.getElementById("pick-tool");
+      }
+      static {
+        this.remove_pip = document.getElementById("remove-pip");
+      }
+      static {
+        this.pick_mode = false;
       }
       static initialise() {
         this.sliders.push(new Slider("slider-r", "rgb", "r"));
@@ -11558,6 +11584,14 @@ var init_picker = __esm({
           const hex = Colour.clean_hex(this.hex_input.value, true);
           this.set_hex(hex);
           this.sliders.forEach((slider) => slider.set_value(hex));
+        });
+        this.pick_tool.addEventListener("click", () => {
+          this.pick_mode = true;
+          this.pick_tool.classList.add("active");
+          PixelGrid.canvas.style.setProperty("--cursor", "crosshair");
+        });
+        this.remove_pip.addEventListener("click", () => {
+          ToolBox.remove_colour_pip(this.pip, true);
         });
       }
       static set_editing(pip) {
@@ -11580,6 +11614,13 @@ var init_picker = __esm({
         ToolBox.save_palette_cookie();
         this.hex_input.value = hex;
       }
+      static pick(point) {
+        const hex = Block.pixel_at(point);
+        if (hex !== this.pip.hex) {
+          this.set_hex(hex);
+          this.sliders.forEach((slider) => slider.set_value(hex));
+        }
+      }
     };
   }
 });
@@ -11590,13 +11631,7 @@ var init_tool = __esm({
   "tool.ts"() {
     init_tool_box();
     Tool = class {
-      constructor() {
-        this.active = false;
-        this.active_button = null;
-      }
       activate(button = null) {
-        this.active = true;
-        this.active_button = button;
         this.element.classList.add("active");
         if (ToolBox.active.length > 1) {
           const badge = document.createElement("div");
@@ -11606,8 +11641,6 @@ var init_tool = __esm({
         }
       }
       deactivate() {
-        this.active = false;
-        this.active_button = null;
         this.element.classList.remove("active");
         this.badge_container.innerHTML = "";
       }
@@ -11664,7 +11697,7 @@ var init_pip = __esm({
               } else {
                 x = 0;
               }
-              pip.element.classList.add("animated");
+              pip.element.classList.add("animate");
               pip.element.style.setProperty("--x", `${x}px`);
             });
           }
@@ -11684,7 +11717,7 @@ var init_pip = __esm({
           clicked = false;
           dragged = false;
           this.element.style.removeProperty("--x");
-          this.element.classList.remove("animated", "dragging");
+          this.element.classList.remove("animate", "dragging");
         });
         this.element.addEventListener("pointerup", (event) => {
           if (clicked) {
@@ -11720,31 +11753,35 @@ var init_pip = __esm({
         return ToolBox.pips.indexOf(this).toString();
       }
       cursor() {
+        const size = 24;
+        const width = 4;
+        const nib = 2;
+        const dot_size = 8;
         const canvas = document.createElement("canvas");
-        canvas.width = 16;
-        canvas.height = 16;
+        canvas.width = size;
+        canvas.height = size;
         const context = canvas.getContext("2d");
         context.translate(0.5, 0.5);
-        const width = 3;
         context.beginPath();
         context.moveTo(0, 0);
-        context.lineTo(1 + width, 1);
-        context.lineTo(1, 1 + width);
+        context.lineTo(nib + width, nib);
+        context.lineTo(nib, nib + width);
         context.closePath();
-        context.moveTo(1 + width, 1);
-        context.lineTo(15, 15 - width);
-        context.lineTo(15 - width, 15);
-        context.lineTo(1, 1 + width);
-        context.lineTo(1 + width, 1);
+        context.moveTo(nib + width, nib);
+        context.lineTo(size - 1, size - 1 - width);
+        context.lineTo(size - 1 - width, size - 1);
+        context.lineTo(nib, nib + width);
         context.closePath();
         context.fillStyle = "black";
         context.fill();
         context.strokeStyle = "white";
         context.lineWidth = 1;
         context.stroke();
+        context.beginPath();
+        context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
         context.fillStyle = this.hex;
-        context.fillRect(0, 8, 7, 7);
-        context.strokeRect(0, 8, 7, 7);
+        context.fill();
+        context.stroke();
         return `url(${canvas.toDataURL()}), auto`;
       }
     };
@@ -11765,7 +11802,7 @@ var init_pan_tool = __esm({
         this.badge_container = document.getElementById("pan-badges");
       }
       initialise() {
-        this.element.classList.add("animated");
+        this.element.classList.add("animate");
         this.badge_container.classList.add("badge");
         let clicked = false;
         this.element.addEventListener("pointerdown", () => clicked = true);
@@ -11809,7 +11846,8 @@ var init_tool_box = __esm({
     init_colour();
     init_pan_tool();
     init_pixel_grid();
-    ToolBox = class {
+    init_picker();
+    ToolBox = class _ToolBox {
       static {
         this.toolbox = document.getElementById("toolbox");
       }
@@ -11829,8 +11867,13 @@ var init_tool_box = __esm({
         pan_tool.initialise();
         this.load_cookies();
         if (this.pips.length === 0) this.load_default_palette();
-        if (this.active.length === 0) this.set_active(this.pips[0], 0);
+        if (this.active.length === 0) this.set_active(this.pips[0]);
         this.update_last_tool(this.active[0]);
+        this.add_pip_button.addEventListener("click", () => {
+          const pip = this.add_colour_pip(Picker.pip?.hex ?? "#000000", true);
+          Picker.set_editing(pip);
+          _ToolBox.set_active(pip);
+        });
       }
       static tools() {
         return [
@@ -11869,8 +11912,41 @@ var init_tool_box = __esm({
         pip.initialise();
         this.pips.push(pip);
         this.toolbox.insertBefore(pip.element, this.add_pip_button);
+        this.save_palette_cookie();
+        if (animate) {
+          pip.element.classList.add("slide-in-out");
+          setTimeout(() => pip.element.classList.remove("slide-in-out"));
+        }
+        return pip;
       }
-      static set_active(tool, button) {
+      static remove_colour_pip(pip, animate = false) {
+        let active = null;
+        this.active.forEach((tool, i) => {
+          if (tool === pip) {
+            active ??= i;
+            delete this.active[i];
+          }
+        });
+        const index = this.pips.indexOf(pip);
+        this.pips.splice(index, 1);
+        const replacement = this.pips[index - 1];
+        Picker.set_editing(replacement);
+        if (active !== null) {
+          this.set_active(replacement, active);
+        } else if (this.last_tool === pip) {
+          this.update_last_tool(pan_tool);
+          this.update_tools();
+          this.save_button_cookie();
+        }
+        this.save_palette_cookie();
+        if (animate) {
+          pip.element.classList.add("animate", "slide-in-out");
+          setTimeout(() => pip.element.remove(), 200);
+        } else {
+          pip.element.remove();
+        }
+      }
+      static set_active(tool, button = 0) {
         this.active[button] = tool;
         this.update_last_tool(tool);
         this.update_tools();
@@ -11891,8 +11967,10 @@ var init_tool_box = __esm({
         this.update_cursor();
       }
       static update_cursor(tool = this.last_tool) {
-        PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
-        PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
+        if (tool) {
+          PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
+          PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
+        }
       }
       static save_palette_cookie() {
         document.cookie = `palette=${this.pips.map((p) => p.hex).join(",")}`;
@@ -11928,24 +12006,39 @@ function on_touch(event) {
   initial_point = PixelGrid.centre.plus(last_point).view();
   is_touching = true;
   document.body.classList.add("dragging");
-  if (event.ctrlKey || event.metaKey) {
-    ToolBox.update_cursor(pan_tool);
-  } else if ([0, 1, 2].includes(event.button)) {
-    dragging_button = event.button;
-    const tool = ToolBox.get_active(dragging_button);
-    ToolBox.update_last_tool(tool);
-    tool.on_drag(last_point);
+  if (Picker.pick_mode) {
+    Picker.pick(last_point);
+  } else {
+    if (event.ctrlKey || event.metaKey) {
+      ToolBox.update_cursor(pan_tool);
+    } else if ([0, 1, 2].includes(event.button)) {
+      dragging_button = event.button;
+      const tool = ToolBox.get_active(dragging_button);
+      ToolBox.update_last_tool(tool);
+      tool.on_drag(last_point);
+    }
+    Picker.set_editing(null);
   }
-  Picker.set_editing(null);
 }
 function on_move(event) {
   const point = Point.view(event.x, event.y);
   if (is_touching) {
-    if (event.ctrlKey || event.metaKey) {
+    if (Picker.pick_mode) {
+      Picker.pick(point);
+    } else if (event.ctrlKey || event.metaKey) {
       PixelGrid.move_to(initial_point.minus(point));
     } else if (dragging_button !== null) {
       ToolBox.get_active(dragging_button).on_drag(point, last_point);
     }
+    [
+      ToolBox.toolbox,
+      Picker.element
+    ].forEach((element) => {
+      const { x, y } = element.getBoundingClientRect();
+      const dx = x - event.x;
+      const dy = y - event.y;
+      element.style.opacity = dx < 16 && dy < 16 ? "0%" : null;
+    });
   }
   last_point = point;
 }
@@ -11953,6 +12046,13 @@ function on_lift(event) {
   is_touching = false;
   dragging_button = false;
   document.body.classList.remove("dragging");
+  ToolBox.toolbox.style.opacity = null;
+  Picker.element.style.opacity = null;
+  if (Picker.pick_mode) {
+    Picker.pick_mode = false;
+    Picker.pick_tool.classList.remove("active");
+    ToolBox.update_cursor();
+  }
 }
 function on_scroll(event) {
   event.preventDefault();
@@ -11982,7 +12082,7 @@ function on_key_down(event) {
     case "9":
     case "0":
       const index = (Number.parseInt(event.key) + 9) % 10;
-      ToolBox.set_active(ToolBox.pips[index], 0);
+      ToolBox.set_active(ToolBox.pips[index]);
       return;
     case "ArrowLeft":
       PixelGrid.move_by(Point.view(-16, 0, 0));
