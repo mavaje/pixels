@@ -10971,11 +10971,14 @@ var init_db = __esm({
 });
 
 // config.ts
-var DEBUG;
+var DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     DEBUG = {
       block_borders: false
+    };
+    FEATURE = {
+      touch_controls: false
     };
   }
 });
@@ -12067,7 +12070,7 @@ function on_touch(event) {
       active_button = event.button;
       const tool = ToolBox.get_active(active_button);
       ToolBox.update_cursor(tool);
-      if (event.pointerType !== "touch") {
+      if (!FEATURE.touch_controls || event.pointerType !== "touch") {
         tool.on_drag(point);
       }
     }
@@ -12081,7 +12084,7 @@ function on_move(event) {
   pointers[event.pointerId] ??= [];
   pointers[event.pointerId].unshift(point);
   if (is_touching) {
-    if (Object.entries(pointers).length > 1) {
+    if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
       const centre = Point.average(valid_pointers.map((p) => p[0]));
       const last_centre = Point.average(valid_pointers.map((p) => p[1]));
@@ -12238,6 +12241,7 @@ var init_listeners = __esm({
     init_tool_box();
     init_picker();
     init_pan_tool();
+    init_config();
     download_anchor = document.getElementById("downloader");
     is_touching = false;
     active_button = null;

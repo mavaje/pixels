@@ -3,6 +3,7 @@ import {Point} from "./point";
 import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
 import {pan_tool} from "./pan-tool";
+import {FEATURE} from "./config";
 
 const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
 
@@ -50,7 +51,7 @@ function on_touch(event: PointerEvent) {
             active_button = event.button;
             const tool = ToolBox.get_active(active_button);
             ToolBox.update_cursor(tool);
-            if (event.pointerType !== 'touch') {
+            if (!FEATURE.touch_controls || event.pointerType !== 'touch') {
                 tool.on_drag(point);
             }
         }
@@ -69,7 +70,7 @@ function on_move(event: PointerEvent) {
     pointers[event.pointerId].unshift(point);
 
     if (is_touching) {
-        if (Object.entries(pointers).length > 1) {
+        if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
             const valid_pointers = Object.values(pointers).filter(p => p.length >= 2);
             const centre = Point.average(valid_pointers.map(p => p[0]));
             const last_centre = Point.average(valid_pointers.map(p => p[1]));
