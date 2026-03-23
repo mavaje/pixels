@@ -11265,7 +11265,7 @@ var init_point = __esm({
         );
       }
       distance() {
-        return Math.sqrt(this.x ** 2 + this.y ** 2);
+        return Math.hypot(this.x, this.y);
       }
       scale(s) {
         return new _Point(

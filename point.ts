@@ -106,7 +106,7 @@ export class Point {
     }
 
     public distance(): number {
-        return Math.sqrt(this.x ** 2 + this.y ** 2);
+        return Math.hypot(this.x, this.y);
     }
 
     public scale(s: number): Point {
