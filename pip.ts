@@ -55,8 +55,8 @@ export class Pip extends Tool {
                 if (offset !== 0) {
                     const next_index = offset < 0
                         ? index + offset
-                        : index + offset + 1
-                    ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element);
+                        : index + offset + 1;
+                    ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element ?? ToolBox.add_pip_button);
 
                     ToolBox.pips.splice(index, 1);
                     ToolBox.pips.splice(index + offset, 0, this);
