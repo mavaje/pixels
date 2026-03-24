@@ -11310,563 +11310,6 @@ var init_point = __esm({
   }
 });
 
-// slider.ts
-var Slider;
-var init_slider = __esm({
-  "slider.ts"() {
-    init_colour();
-    init_picker();
-    Slider = class {
-      constructor(id, space, key) {
-        this.space = space;
-        this.key = key;
-        this.element = document.getElementById(id);
-        this.knob = document.createElement("div");
-        this.knob.classList.add("knob");
-        this.element.append(this.knob);
-        let dragging = false;
-        this.element.addEventListener("pointerdown", (event) => {
-          dragging = true;
-          this.on_slide(event);
-        });
-        document.addEventListener("pointermove", (event) => {
-          if (dragging) this.on_slide(event, false);
-        });
-        document.addEventListener("pointerup", () => dragging = false);
-        document.addEventListener("pointercancel", () => dragging = false);
-      }
-      set_value(hex, animate = true, move = true) {
-        let value;
-        let stops;
-        switch (this.space) {
-          case "rgb":
-            value = Picker.rgb[this.key];
-            const min_rgb = { ...Picker.rgb, [this.key]: 0 };
-            const max_rgb = { ...Picker.rgb, [this.key]: 1 };
-            stops = [
-              Colour.rgb_to_hex(min_rgb),
-              Colour.rgb_to_hex(max_rgb)
-            ];
-            break;
-          case "hsl":
-            value = Picker.hsl[this.key];
-            stops = {
-              h: [0, 1, 2, 3, 4, 5, 6].map((v) => v / 6),
-              s: [0, 1],
-              l: [0, 0.5, 1]
-            }[this.key].map((v) => ({ ...Picker.hsl, [this.key]: v })).map(Colour.hsl_to_hex);
-            break;
-        }
-        this.element.classList.toggle("animate", animate);
-        this.element.style.setProperty("--stops", stops.join(","));
-        this.knob.style.background = hex;
-        if (move) this.knob.style.setProperty("--value", String(value));
-      }
-      on_slide(event, animate = true) {
-        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
-        value = Math.min(Math.max(value, 0), 1);
-        let hex;
-        switch (this.space) {
-          case "rgb":
-            const rgb = { ...Picker.rgb, [this.key]: value };
-            hex = Colour.rgb_to_hex(rgb);
-            Picker.set_hex(hex, animate);
-            Picker.rgb = rgb;
-            break;
-          case "hsl":
-            const hsl = { ...Picker.hsl, [this.key]: value };
-            hex = Colour.hsl_to_hex(hsl);
-            Picker.set_hex(hex, animate);
-            Picker.hsl = hsl;
-            break;
-        }
-        Picker.element.classList.add("animate");
-        this.element.classList.toggle("animate", animate);
-        this.knob.style.background = hex;
-        this.knob.style.setProperty("--value", String(value));
-        Picker.sliders.forEach((slider) => {
-          if (this !== slider) {
-            slider.set_value(hex, animate, this.space !== slider.space);
-          }
-        });
-      }
-    };
-  }
-});
-
-// picker.ts
-var picker_exports = {};
-__export(picker_exports, {
-  Picker: () => Picker
-});
-var Picker;
-var init_picker = __esm({
-  "picker.ts"() {
-    init_pip();
-    init_slider();
-    init_colour();
-    init_tool_box();
-    init_block();
-    Picker = class _Picker {
-      static {
-        this.element = document.getElementById("picker");
-      }
-      static {
-        this.pip = null;
-      }
-      static {
-        this.sliders = [];
-      }
-      static {
-        this.hex_input = document.getElementById("hex-input");
-      }
-      static {
-        this.pick_tool = document.getElementById("pick-tool");
-      }
-      static {
-        this.remove_pip = document.getElementById("remove-pip");
-      }
-      static {
-        this.pick_mode = false;
-      }
-      static initialise() {
-        this.sliders.push(new Slider("slider-r", "rgb", "r"));
-        this.sliders.push(new Slider("slider-g", "rgb", "g"));
-        this.sliders.push(new Slider("slider-b", "rgb", "b"));
-        this.sliders.push(new Slider("slider-h", "hsl", "h"));
-        this.sliders.push(new Slider("slider-s", "hsl", "s"));
-        this.sliders.push(new Slider("slider-l", "hsl", "l"));
-        this.hex_input.addEventListener("focus", () => {
-          this.hex_input.setSelectionRange(1, 7);
-        });
-        this.hex_input.addEventListener("change", () => {
-          const hex = Colour.clean_hex(this.hex_input.value, true);
-          this.set_hex(hex);
-          this.sliders.forEach((slider) => slider.set_value(hex));
-        });
-        this.hex_input.addEventListener("keypress", (event) => {
-          if (event.key === "Enter") {
-            this.hex_input.blur();
-          }
-        });
-        this.pick_tool.addEventListener("click", () => {
-          this.start_picking();
-        });
-        this.remove_pip.addEventListener("click", () => {
-          ToolBox.remove_colour_pip(this.pip, true);
-        });
-      }
-      static set_editing(pip) {
-        this.element.classList.toggle("animate", !!this.pip);
-        this.pip?.editing(false);
-        this.pip = pip;
-        this.pip?.editing(true);
-        this.element.classList.toggle("hidden", !pip);
-        if (pip) {
-          this.rgb = Colour.hex_to_rgb(pip.hex);
-          this.hsl = Colour.hex_to_hsl(pip.hex);
-          this.sliders.forEach((slider) => slider.set_value(pip.hex));
-          this.hex_input.value = pip.hex;
-        }
-      }
-      static set_hex(hex, animate = true) {
-        _Picker.pip.set_hex(hex, animate);
-        this.rgb = Colour.hex_to_rgb(hex);
-        this.hsl = Colour.hex_to_hsl(hex);
-        ToolBox.save_palette_cookie();
-        this.hex_input.value = hex;
-      }
-      static start_picking() {
-        this.element.classList.add("animate");
-        this.pick_mode = true;
-        this.pick_tool.classList.add("active");
-        ToolBox.update_cursor();
-      }
-      static pick(point, button) {
-        this.element.classList.add("animate");
-        const hex = Block.pixel_at(point);
-        if (!this.pip && button !== null) {
-          if (ToolBox.active[button] instanceof Pip) {
-            this.pip = ToolBox.active[button];
-          }
-        }
-        if (this.pip && hex !== this.pip.hex) {
-          this.set_hex(hex);
-          this.sliders.forEach((slider) => slider.set_value(hex));
-        }
-      }
-    };
-  }
-});
-
-// tool.ts
-var Tool;
-var init_tool = __esm({
-  "tool.ts"() {
-    init_tool_box();
-    Tool = class {
-      activate(button = null) {
-        this.element.classList.add("active");
-        if (ToolBox.active.length > 1) {
-          const badge = document.createElement("div");
-          badge.innerText = ["L", "M", "R"][button];
-          badge.classList.add("badge", `button-${button}`);
-          this.badge_container.append(badge);
-        }
-      }
-      deactivate() {
-        this.element.classList.remove("active");
-        this.badge_container.innerHTML = "";
-      }
-      cursor() {
-        return "auto";
-      }
-      cursor_down() {
-        return "var(--cursor)";
-      }
-    };
-  }
-});
-
-// pip.ts
-var Pip;
-var init_pip = __esm({
-  "pip.ts"() {
-    init_tool_box();
-    init_picker();
-    init_block();
-    init_tool();
-    Pip = class extends Tool {
-      constructor(hex) {
-        super();
-        this.hex = hex;
-        this.element = document.createElement("div");
-        this.element.classList.add("pip");
-        this.badge_container = document.createElement("div");
-        this.badge_container.classList.add("badges");
-        this.element.append(this.badge_container);
-        this.set_hex(hex);
-      }
-      initialise() {
-        let clicked = false;
-        let dragged = false;
-        this.element.addEventListener("pointerdown", () => clicked = true);
-        document.addEventListener("pointermove", (event) => {
-          if (clicked) {
-            const { width } = this.element.getBoundingClientRect();
-            const offset = this.drag_offset(event);
-            if (offset !== 0) {
-              dragged = true;
-              this.element.classList.add("dragging");
-            }
-            const index = ToolBox.pips.indexOf(this);
-            ToolBox.pips.forEach((pip, i) => {
-              let x;
-              if (i === index) {
-                x = offset * width;
-              } else if (index + offset <= i && i < index) {
-                x = width;
-              } else if (index < i && i <= index + offset) {
-                x = -width;
-              } else {
-                x = 0;
-              }
-              pip.element.classList.add("animate");
-              pip.element.style.setProperty("--x", `${x}px`);
-            });
-          }
-        });
-        document.addEventListener("pointerup", (event) => {
-          if (dragged) {
-            const offset = this.drag_offset(event);
-            const index = ToolBox.pips.indexOf(this);
-            if (offset !== 0) {
-              const next_index = offset < 0 ? index + offset : index + offset + 1;
-              ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element ?? ToolBox.add_pip_button);
-              ToolBox.pips.splice(index, 1);
-              ToolBox.pips.splice(index + offset, 0, this);
-              ToolBox.save_palette_cookie();
-            }
-          }
-          clicked = false;
-          dragged = false;
-          this.element.style.removeProperty("--x");
-          this.element.classList.remove("animate", "dragging");
-        });
-        this.element.addEventListener("pointerup", (event) => {
-          if (clicked) {
-            if (!dragged && [0, 1, 2].includes(event.button)) {
-              const open_editor = Picker.pip ? Picker.pip !== this : ToolBox.active[event.button] === this;
-              Picker.set_editing(open_editor ? this : null);
-              ToolBox.set_active(this, event.button);
-            }
-            event.preventDefault();
-          }
-        }, { passive: false });
-        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
-      }
-      drag_offset(event) {
-        const { x, width } = this.element.getBoundingClientRect();
-        const pip_x = x + width / 2;
-        let offset = Math.round((event.x - pip_x) / width);
-        const index = ToolBox.pips.indexOf(this);
-        return Math.min(Math.max(offset, -index), ToolBox.pips.length - 1 - index);
-      }
-      set_hex(hex, animate = true) {
-        this.hex = hex;
-        this.element.classList.toggle("animate", animate);
-        this.element.style.setProperty("--hex", hex);
-      }
-      editing(editing) {
-        this.element.classList.toggle("editing", editing);
-      }
-      on_drag(p1, p2 = p1) {
-        Block.draw_line(p1, p2, this.hex);
-      }
-      cookie_key() {
-        return ToolBox.pips.indexOf(this).toString();
-      }
-      cursor() {
-        const size = 24;
-        const width = 4;
-        const nib = 2;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const context = canvas.getContext("2d");
-        context.translate(0.5, 0.5);
-        context.beginPath();
-        context.moveTo(0, 0);
-        context.lineTo(nib + width, nib);
-        context.lineTo(nib, nib + width);
-        context.closePath();
-        context.moveTo(nib + width, nib);
-        context.lineTo(size - 1, size - 1 - width);
-        context.lineTo(size - 1 - width, size - 1);
-        context.lineTo(nib, nib + width);
-        context.closePath();
-        context.fillStyle = "black";
-        context.fill();
-        context.strokeStyle = "white";
-        context.lineWidth = 1;
-        context.stroke();
-        const dot_size = 12;
-        context.beginPath();
-        context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
-        context.fillStyle = this.hex;
-        context.fill();
-        context.stroke();
-        return `url(${canvas.toDataURL()}), auto`;
-      }
-    };
-  }
-});
-
-// pan-tool.ts
-var PanTool, pan_tool;
-var init_pan_tool = __esm({
-  "pan-tool.ts"() {
-    init_tool();
-    init_tool_box();
-    init_pixel_grid();
-    PanTool = class extends Tool {
-      constructor() {
-        super(...arguments);
-        this.element = document.getElementById("pan-tool");
-        this.badge_container = document.getElementById("pan-badges");
-      }
-      initialise() {
-        this.element.classList.add("animate");
-        this.badge_container.classList.add("badge");
-        let clicked = false;
-        this.element.addEventListener("pointerdown", () => clicked = true);
-        document.addEventListener("pointerup", () => clicked = false);
-        this.element.addEventListener("pointerup", (event) => {
-          if (clicked) {
-            if ([0, 1, 2].includes(event.button)) {
-              ToolBox.set_active(this, event.button);
-            }
-            event.preventDefault();
-          }
-        });
-        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
-      }
-      on_drag(p1, p2) {
-        if (p2) PixelGrid.move_by(p2.view().minus(p1));
-      }
-      cookie_key() {
-        return "pan";
-      }
-      cursor() {
-        return "grab";
-      }
-      cursor_down() {
-        return "grabbing";
-      }
-    };
-    pan_tool = new PanTool();
-  }
-});
-
-// tool-box.ts
-var tool_box_exports = {};
-__export(tool_box_exports, {
-  ToolBox: () => ToolBox
-});
-var ToolBox;
-var init_tool_box = __esm({
-  "tool-box.ts"() {
-    init_pip();
-    init_colour();
-    init_pan_tool();
-    init_pixel_grid();
-    init_picker();
-    ToolBox = class _ToolBox {
-      static {
-        this.toolbox = document.getElementById("toolbox");
-      }
-      static {
-        this.add_pip_button = document.getElementById("add-pip");
-      }
-      static {
-        this.pips = [];
-      }
-      static {
-        this.active = [];
-      }
-      static {
-        this.last_tool = pan_tool;
-      }
-      static initialise() {
-        pan_tool.initialise();
-        this.load_cookies();
-        if (this.pips.length === 0) this.load_default_palette();
-        if (this.active.length === 0) this.set_active(this.pips[0]);
-        this.update_last_tool(this.active[0]);
-        this.add_pip_button.addEventListener("click", () => this.new_colour_pip());
-      }
-      static tools() {
-        return [
-          pan_tool,
-          ...this.pips
-        ];
-      }
-      static load_default_palette() {
-        this.add_colour_pip("#000000");
-        this.add_colour_pip("#ffffff");
-      }
-      static load_cookies() {
-        for (const cookie of document.cookie.split(/;\s*/g)) {
-          const [key, value] = cookie.split("=");
-          switch (key) {
-            case "palette":
-              value.split(",").map((hex) => Colour.clean_hex(hex, true)).forEach((hex) => {
-                this.add_colour_pip(hex);
-              });
-              break;
-            case "buttons":
-              value.split(",").forEach((tool, button) => {
-                if (tool === "pan") {
-                  this.set_active(pan_tool, button);
-                } else {
-                  const pip = this.pips[Number.parseInt(tool)];
-                  if (pip) this.set_active(pip, button);
-                }
-              });
-          }
-        }
-        return false;
-      }
-      static add_colour_pip(hex, animate = false) {
-        const pip = new Pip(hex);
-        pip.initialise();
-        this.pips.push(pip);
-        this.toolbox.insertBefore(pip.element, this.add_pip_button);
-        this.save_palette_cookie();
-        if (animate) {
-          pip.element.classList.add("slide-in-out");
-          setTimeout(() => pip.element.classList.remove("slide-in-out"));
-        }
-        return pip;
-      }
-      static new_colour_pip() {
-        const pip = this.add_colour_pip(Picker.pip?.hex ?? "#000000", true);
-        Picker.set_editing(pip);
-        _ToolBox.set_active(pip);
-      }
-      static remove_colour_pip(pip, animate = false) {
-        let active = null;
-        this.active.forEach((tool, i) => {
-          if (tool === pip) {
-            active ??= i;
-            delete this.active[i];
-          }
-        });
-        const index = this.pips.indexOf(pip);
-        this.pips.splice(index, 1);
-        const replacement = this.pips[index - 1];
-        Picker.set_editing(replacement);
-        if (active !== null) {
-          this.set_active(replacement, active);
-        } else if (this.last_tool === pip) {
-          this.update_last_tool(pan_tool);
-          this.update_tools();
-          this.save_button_cookie();
-        }
-        this.save_palette_cookie();
-        if (animate) {
-          pip.element.classList.add("animate", "slide-in-out");
-          setTimeout(() => pip.element.remove(), 200);
-        } else {
-          pip.element.remove();
-        }
-      }
-      static set_active(tool, button = 0) {
-        this.active[button] = tool;
-        this.update_last_tool(tool);
-        this.update_tools();
-        this.save_button_cookie();
-      }
-      static get_active(button) {
-        if (this.active[button]) {
-          return this.last_tool = this.active[button];
-        } else {
-          return pan_tool;
-        }
-      }
-      static update_tools() {
-        this.tools().forEach((pip) => pip.deactivate());
-        this.active.forEach((pip, i) => {
-          pip?.activate(i);
-        });
-        this.update_cursor();
-      }
-      static update_last_tool(tool) {
-        this.last_tool = tool;
-        this.update_cursor();
-      }
-      static update_cursor(tool = this.last_tool) {
-        if (Picker.pick_mode) {
-          this.picker_cursor();
-        } else if (tool) {
-          PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
-          PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
-        }
-      }
-      static picker_cursor() {
-        PixelGrid.canvas.style.setProperty("--cursor", "crosshair");
-        PixelGrid.canvas.style.setProperty("--cursor-down", "var(--cursor)");
-      }
-      static save_palette_cookie() {
-        document.cookie = `palette=${this.pips.map((p) => p.hex).join(",")}`;
-      }
-      static save_button_cookie() {
-        document.cookie = `buttons=${this.active.map((p) => p?.cookie_key() ?? "").join(",")}`;
-      }
-    };
-  }
-});
-
 // pixel-grid.ts
 var PixelGrid;
 var init_pixel_grid = __esm({
@@ -11874,9 +11317,6 @@ var init_pixel_grid = __esm({
     init_block();
     init_point();
     init_config();
-    init_tool_box();
-    init_pip();
-    init_picker();
     PixelGrid = class {
       static {
         this.centre = Point.grid(0, 0);
@@ -11980,19 +11420,15 @@ var init_pixel_grid = __esm({
           }
         }
       }
-      static render_preview(cursor) {
-        const visible = Picker.pick_mode || ToolBox.last_tool instanceof Pip;
+      static update_preview(visible, cursor) {
         this.pixel_preview.classList.toggle("hidden", !visible);
-        if (visible) {
+        if (cursor) {
           cursor = cursor.grid().floor().view();
           this.pixel_preview.style.width = `${this.scale - 2}px`;
           this.pixel_preview.style.height = `${this.scale - 2}px`;
           this.pixel_preview.style.left = `${cursor.x - 1}px`;
           this.pixel_preview.style.top = `${cursor.y - 1}px`;
         }
-      }
-      static hide_preview() {
-        this.pixel_preview.classList.add("hidden");
       }
       static move_to(centre) {
         this.centre = centre.grid();
@@ -12038,6 +11474,513 @@ var init_pixel_grid = __esm({
   }
 });
 
+// tools/tool.ts
+var Tool;
+var init_tool = __esm({
+  "tools/tool.ts"() {
+    init_toolbox();
+    Tool = class {
+      initialise() {
+        let clicked = false;
+        this.element.innerHTML = this.svg_icon(this.icon());
+        this.element.addEventListener("pointerdown", () => clicked = true);
+        document.addEventListener("pointerup", () => clicked = false);
+        this.element.addEventListener("pointerup", (event) => {
+          if (clicked) {
+            Toolbox.set_active(this);
+            event.preventDefault();
+          }
+        });
+      }
+      set active(active) {
+        this.element.classList.toggle("active", active);
+      }
+      svg_icon(path) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+            <g fill="black" stroke="white" stroke-width="1" stroke-linejoin="round" transform="translate(0.5,0.5)">
+                ${path}
+            </g>
+        </svg>`.replace(/\s+/g, " ");
+      }
+      svg_cursor(path, fallback = "auto") {
+        return `url('data:image/svg+xml,${encodeURIComponent(this.svg_icon(path))}'), ${fallback}`;
+      }
+      cursor() {
+        return this.svg_cursor(this.icon());
+      }
+      cursor_down() {
+        return "var(--cursor)";
+      }
+      preview_visible() {
+        return false;
+      }
+    };
+  }
+});
+
+// tools/pan-tool.ts
+var PanTool, pan_tool;
+var init_pan_tool = __esm({
+  "tools/pan-tool.ts"() {
+    init_tool();
+    init_pixel_grid();
+    PanTool = class extends Tool {
+      constructor() {
+        super(...arguments);
+        this.element = document.getElementById("pan-tool");
+      }
+      on_drag(button, point, prev_point) {
+        if (prev_point) PixelGrid.move_by(prev_point.view().minus(point));
+      }
+      icon() {
+        return `
+            <polygon points="11.5,0 16.5,5 13,5 13,10 18,10 18,6.5 23,11.5 18,16.5 18,13 13,13 13,18 16.5,18 11.5,23 6.5,18 10,18 10,13 5,13 5,16.5 0,11.5 5,6.5 5,10 10,10 10,5 6.5,5"/>
+        `;
+      }
+      cursor() {
+        return "grab";
+      }
+      cursor_down() {
+        return "grabbing";
+      }
+    };
+    pan_tool = new PanTool();
+  }
+});
+
+// slider.ts
+var Slider;
+var init_slider = __esm({
+  "slider.ts"() {
+    init_colour();
+    init_picker();
+    Slider = class {
+      constructor(id, space, key) {
+        this.space = space;
+        this.key = key;
+        this.element = document.getElementById(id);
+        this.knob = document.createElement("div");
+        this.knob.classList.add("knob");
+        this.element.append(this.knob);
+        let dragging = false;
+        this.element.addEventListener("pointerdown", (event) => {
+          dragging = true;
+          this.on_slide(event);
+        });
+        document.addEventListener("pointermove", (event) => {
+          if (dragging) this.on_slide(event, false);
+        });
+        document.addEventListener("pointerup", () => dragging = false);
+        document.addEventListener("pointercancel", () => dragging = false);
+      }
+      set_value(hex, animate = true, move = true) {
+        let value;
+        let stops;
+        switch (this.space) {
+          case "rgb":
+            value = Picker.rgb[this.key];
+            const min_rgb = { ...Picker.rgb, [this.key]: 0 };
+            const max_rgb = { ...Picker.rgb, [this.key]: 1 };
+            stops = [
+              Colour.rgb_to_hex(min_rgb),
+              Colour.rgb_to_hex(max_rgb)
+            ];
+            break;
+          case "hsl":
+            value = Picker.hsl[this.key];
+            stops = {
+              h: [0, 1, 2, 3, 4, 5, 6].map((v) => v / 6),
+              s: [0, 1],
+              l: [0, 0.5, 1]
+            }[this.key].map((v) => ({ ...Picker.hsl, [this.key]: v })).map(Colour.hsl_to_hex);
+            break;
+        }
+        this.element.classList.toggle("animate", animate);
+        this.element.style.setProperty("--stops", stops.join(","));
+        this.knob.style.background = hex;
+        if (move) this.knob.style.setProperty("--value", String(value));
+      }
+      on_slide(event, animate = true) {
+        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
+        value = Math.min(Math.max(value, 0), 1);
+        let hex;
+        switch (this.space) {
+          case "rgb":
+            const rgb = { ...Picker.rgb, [this.key]: value };
+            hex = Colour.rgb_to_hex(rgb);
+            Picker.set_hex(hex, animate);
+            Picker.rgb = rgb;
+            break;
+          case "hsl":
+            const hsl = { ...Picker.hsl, [this.key]: value };
+            hex = Colour.hsl_to_hex(hsl);
+            Picker.set_hex(hex, animate);
+            Picker.hsl = hsl;
+            break;
+        }
+        Picker.element.classList.add("animate");
+        this.element.classList.toggle("animate", animate);
+        this.knob.style.background = hex;
+        this.knob.style.setProperty("--value", String(value));
+        Picker.sliders.forEach((slider) => {
+          if (this !== slider) {
+            slider.set_value(hex, animate, this.space !== slider.space);
+          }
+        });
+      }
+    };
+  }
+});
+
+// picker.ts
+var picker_exports = {};
+__export(picker_exports, {
+  Picker: () => Picker
+});
+var Picker;
+var init_picker = __esm({
+  "picker.ts"() {
+    init_slider();
+    init_colour();
+    init_palette();
+    Picker = class {
+      static {
+        this.element = document.getElementById("picker");
+      }
+      static {
+        this.pip = null;
+      }
+      static {
+        this.sliders = [];
+      }
+      static {
+        this.hex_input = document.getElementById("hex-input");
+      }
+      static initialise() {
+        this.sliders.push(new Slider("slider-h", "hsl", "h"));
+        this.sliders.push(new Slider("slider-s", "hsl", "s"));
+        this.sliders.push(new Slider("slider-l", "hsl", "l"));
+        this.sliders.push(new Slider("slider-r", "rgb", "r"));
+        this.sliders.push(new Slider("slider-g", "rgb", "g"));
+        this.sliders.push(new Slider("slider-b", "rgb", "b"));
+        this.hex_input.addEventListener("focus", () => {
+          this.hex_input.setSelectionRange(1, 7);
+        });
+        this.hex_input.addEventListener("change", () => {
+          const hex = Colour.clean_hex(this.hex_input.value, true);
+          this.set_hex(hex);
+          this.update_sliders(hex);
+        });
+        this.hex_input.addEventListener("keypress", (event) => {
+          if (event.key === "Enter") {
+            this.hex_input.blur();
+          }
+        });
+      }
+      static set_editing(pip = null) {
+        this.element.classList.toggle("animate", !!this.pip);
+        this.pip?.editing(false);
+        this.pip = pip;
+        this.pip?.editing(true);
+        this.element.classList.toggle("hidden", !pip);
+        if (pip) {
+          this.rgb = Colour.hex_to_rgb(pip.hex);
+          this.hsl = Colour.hex_to_hsl(pip.hex);
+          this.update_sliders(pip.hex);
+          this.hex_input.value = pip.hex;
+        }
+      }
+      static set_hex(hex, animate = true) {
+        this.pip.set_hex(hex, animate);
+        this.rgb = Colour.hex_to_rgb(hex);
+        this.hsl = Colour.hex_to_hsl(hex);
+        this.hex_input.value = hex;
+        Palette.save_cookie();
+      }
+      static update_sliders(hex) {
+        this.sliders.forEach((slider) => slider.set_value(hex));
+      }
+    };
+  }
+});
+
+// pip.ts
+var Pip;
+var init_pip = __esm({
+  "pip.ts"() {
+    init_picker();
+    init_palette();
+    Pip = class {
+      constructor(hex, button) {
+        this.hex = hex;
+        this.button = button;
+        this.element = document.createElement("div");
+        this.element.classList.add("pip", `button-${button}`);
+        this.set_hex(hex);
+      }
+      initialise() {
+        let clicked = false;
+        let dragged = false;
+        this.element.addEventListener("pointerdown", () => clicked = true);
+        document.addEventListener("pointermove", (event) => {
+          if (clicked) {
+            const { width } = this.element.getBoundingClientRect();
+            const offset = this.drag_offset(event);
+            if (offset !== 0) {
+              dragged = true;
+              this.element.classList.add("dragging");
+            }
+            const index = Palette.pips.indexOf(this);
+            Palette.pips.forEach((pip, i) => {
+              let x;
+              if (i === index) {
+                x = offset * width;
+              } else if (index + offset <= i && i < index) {
+                x = width;
+              } else if (index < i && i <= index + offset) {
+                x = -width;
+              } else {
+                x = 0;
+              }
+              pip.element.classList.add("animate");
+              pip.element.style.setProperty("--x", `${x}px`);
+            });
+          }
+        });
+        document.addEventListener("pointerup", (event) => {
+          if (dragged) {
+            const offset = this.drag_offset(event);
+            const index = Palette.pips.indexOf(this);
+            if (offset !== 0) {
+              const next_index = offset < 0 ? index + offset : index + offset + 1;
+              Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
+              Palette.pips.splice(index, 1);
+              Palette.pips.splice(index + offset, 0, this);
+              Palette.save_cookie();
+            }
+          }
+          clicked = false;
+          dragged = false;
+          this.element.style.removeProperty("--x");
+          this.element.classList.remove("animate", "dragging");
+        });
+        this.element.addEventListener("pointerup", (event) => {
+          if (clicked) {
+            if (!dragged) {
+              Picker.set_editing(Picker.pip === this ? null : this);
+            }
+            event.preventDefault();
+          }
+        }, { passive: false });
+        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
+      }
+      drag_offset(event) {
+        const { x, width } = this.element.getBoundingClientRect();
+        const pip_x = x + width / 2;
+        let offset = Math.round((event.x - pip_x) / width);
+        const index = Palette.pips.indexOf(this);
+        return Math.min(Math.max(offset, -index), Palette.pips.length - 1 - index);
+      }
+      set_hex(hex, animate = true) {
+        if (hex !== this.hex) {
+          this.element.classList.toggle("animate", animate);
+        }
+        this.hex = hex;
+        this.element.style.setProperty("--hex", hex);
+      }
+      editing(editing) {
+        this.element.classList.toggle("editing", editing);
+      }
+    };
+  }
+});
+
+// cookies.ts
+var Cookies;
+var init_cookies = __esm({
+  "cookies.ts"() {
+    Cookies = class {
+      static save(name4, value) {
+        document.cookie = `${name4}=${value}`;
+      }
+      static load(name4) {
+        for (const cookie of document.cookie.split(/;\s*/g)) {
+          const [key, value] = cookie.split("=");
+          if (key === name4) return value;
+        }
+        return null;
+      }
+    };
+  }
+});
+
+// palette.ts
+var palette_exports = {};
+__export(palette_exports, {
+  Palette: () => Palette
+});
+var Palette;
+var init_palette = __esm({
+  "palette.ts"() {
+    init_pip();
+    init_cookies();
+    init_colour();
+    Palette = class {
+      static {
+        this.element = document.getElementById("palette");
+      }
+      static {
+        this.pips = [];
+      }
+      static initialise() {
+        const hexes = Cookies.load("palette");
+        if (hexes) {
+          hexes.split(",").map((hex) => Colour.clean_hex(hex, true)).slice(0, 3).forEach((hex, i) => {
+            this.set_pip(i, hex);
+          });
+        }
+      }
+      static set_pip(button, hex, animate = false) {
+        let pip = this.pips[button];
+        if (pip) {
+          pip.set_hex(hex, animate);
+        } else {
+          pip = new Pip(hex, button);
+          pip.initialise();
+          this.pips.push(pip);
+          this.element.append(pip.element);
+          if (animate) {
+            pip.element.classList.add("slide-in-out");
+            setTimeout(() => pip.element.classList.remove("slide-in-out"));
+          }
+        }
+        this.save_cookie();
+        return pip;
+      }
+      static save_cookie() {
+        Cookies.save("palette", this.pips.map((p) => p.hex));
+      }
+    };
+  }
+});
+
+// tools/pick-tool.ts
+var PickTool, pick_tool;
+var init_pick_tool = __esm({
+  "tools/pick-tool.ts"() {
+    init_tool();
+    init_block();
+    init_palette();
+    PickTool = class extends Tool {
+      constructor() {
+        super(...arguments);
+        this.element = document.getElementById("pick-tool");
+      }
+      on_drag(button, point, prev_point) {
+        if (button !== null) {
+          const hex = Block.pixel_at(point);
+          Palette.set_pip(button, hex, true);
+        }
+      }
+      // cursor(): string {
+      //     return 'url(#icon-pick), crosshair';
+      // }
+      preview_visible() {
+        return true;
+      }
+      icon() {
+        return `
+            <polygon points="0,0 3,0 18,15 15,18 0,3"/>
+            <path d="M16,8 L18,10 C14,14 23,14 23,18  23,21 21,23 18,23  14,23 14,14 10,18 L8,16 Z"/>
+        `;
+      }
+    };
+    pick_tool = new PickTool();
+  }
+});
+
+// tools/pen-tool.ts
+var PenTool, pen_tool;
+var init_pen_tool = __esm({
+  "tools/pen-tool.ts"() {
+    init_tool();
+    init_block();
+    init_palette();
+    PenTool = class extends Tool {
+      constructor() {
+        super(...arguments);
+        this.element = document.getElementById("pen-tool");
+      }
+      on_drag(button, point, prev_point = point) {
+        const pip = Palette.pips[button] ?? Palette.pips[0];
+        Block.draw_line(point, prev_point, pip.hex);
+      }
+      icon() {
+        return `
+            <polygon points="0,0 6,2 23,19 19,23 2,6"/>
+            <line x1="2" y1="6" x2="6" y2="2"/>
+            <line x1="16" y1="20" x2="20" y2="16"/>
+        `;
+      }
+      preview_visible() {
+        return true;
+      }
+    };
+    pen_tool = new PenTool();
+  }
+});
+
+// toolbox.ts
+var toolbox_exports = {};
+__export(toolbox_exports, {
+  Toolbox: () => Toolbox
+});
+var Toolbox;
+var init_toolbox = __esm({
+  "toolbox.ts"() {
+    init_pan_tool();
+    init_pixel_grid();
+    init_pick_tool();
+    init_pen_tool();
+    Toolbox = class {
+      static {
+        this.tools = [
+          pan_tool,
+          pen_tool,
+          pick_tool
+        ];
+      }
+      static {
+        this.pan_hotkey = false;
+      }
+      static initialise() {
+        this.tools.forEach((tool) => {
+          tool.initialise();
+        });
+        this.set_active(pan_tool);
+      }
+      static set_active(tool) {
+        this.active = tool;
+        this.tools.forEach((t) => t.active = t === tool);
+        this.update_cursor();
+      }
+      static active_tool(event) {
+        if (this.pan_hotkey) {
+          return pan_tool;
+        } else if (event.altKey) {
+          return pick_tool;
+        } else {
+          return this.active;
+        }
+      }
+      static update_cursor(tool = this.active) {
+        PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
+        PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
+      }
+    };
+  }
+});
+
 // listeners.ts
 var listeners_exports = {};
 __export(listeners_exports, {
@@ -12058,23 +12001,12 @@ function on_hash(event) {
   }
 }
 function on_touch(event) {
+  active_button = event.button;
   const point = Point.view(event.x, event.y);
-  is_touching = true;
   document.body.classList.add("dragging");
-  if (Picker.pick_mode || event.altKey) {
-    Picker.pick(point, Picker.pick_mode ? null : event.button);
-  } else {
-    if (event.ctrlKey || event.metaKey) {
-      ToolBox.update_cursor(pan_tool);
-    } else if ([0, 1, 2].includes(event.button)) {
-      active_button = event.button;
-      const tool = ToolBox.get_active(active_button);
-      ToolBox.update_cursor(tool);
-      if (!FEATURE.touch_controls || event.pointerType !== "touch") {
-        tool.on_drag(point);
-      }
-    }
-    Picker.set_editing(null);
+  const tool = Toolbox.active_tool(event);
+  if (!FEATURE.touch_controls || event.pointerType !== "touch") {
+    tool.on_drag(event.button, point);
   }
   last_point = point;
   pointers[event.pointerId] = [point];
@@ -12083,7 +12015,9 @@ function on_move(event) {
   const point = Point.view(event.x, event.y);
   pointers[event.pointerId] ??= [];
   pointers[event.pointerId].unshift(point);
-  if (is_touching) {
+  pointers[event.pointerId].splice(2);
+  const tool = Toolbox.active_tool(event);
+  if (active_button !== null) {
     if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
       const centre = Point.average(valid_pointers.map((p) => p[0]));
@@ -12094,53 +12028,38 @@ function on_move(event) {
         const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
         PixelGrid.scale_by(pinch / last_pinch, centre);
       }
-    } else if (Picker.pick_mode || event.altKey) {
-      Picker.pick(point, Picker.pick_mode ? null : active_button);
-    } else if (event.ctrlKey || event.metaKey) {
-      PixelGrid.move_by(last_point.view().minus(point));
-    } else if (active_button !== null) {
-      const tool = ToolBox.get_active(active_button);
-      tool.on_drag(point, last_point);
+    } else {
+      tool.on_drag(active_button, point, last_point);
     }
-    [
-      ToolBox.toolbox,
-      Picker.element
-    ].forEach((element) => {
-      const { x, y, width, height } = element.getBoundingClientRect();
+    for (const glass of glasses) {
+      const { x, y, width, height } = glass.getBoundingClientRect();
       if (Object.values(pointers).every(
-        ([_, point2]) => point2.x > x - 16 && point2.x < x + width + 16 && point2.y > y - 16 && point2.y < y + height + 16
+        ([point2]) => point2.x > x - 16 && point2.x < x + width + 16 && point2.y > y - 16 && point2.y < y + height + 16
       )) {
-        element.style.opacity = "0%";
+        glass.style.opacity = "0%";
       } else {
-        element.style.opacity = null;
+        glass.style.opacity = null;
       }
-    });
+    }
   }
-  if (event.target === PixelGrid.canvas) {
-    PixelGrid.render_preview(point);
-  }
+  PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), point);
   last_point = point;
 }
 function on_leave(event) {
-  PixelGrid.hide_preview();
+  PixelGrid.update_preview(false, null);
 }
 function on_lift(event) {
   if (active_button !== null) {
-    ToolBox.get_active(active_button).on_drag(last_point);
+    Toolbox.active_tool(event).on_drag(active_button, last_point);
   }
   delete pointers[event.pointerId];
   if (Object.entries(pointers).length === 0) {
-    is_touching = false;
     active_button = null;
     document.body.classList.remove("dragging");
-    ToolBox.toolbox.style.opacity = null;
-    Picker.element.style.opacity = null;
+    for (const glass of glasses) {
+      glass.style.opacity = null;
+    }
   }
-  if (Picker.pick_mode) {
-    Picker.pick_mode = false;
-    Picker.pick_tool.classList.remove("active");
-  }
-  ToolBox.update_cursor();
 }
 function on_scroll(event) {
   event.preventDefault();
@@ -12150,73 +12069,61 @@ function on_scroll(event) {
     event.deltaY,
     0
   );
+  const tool = Toolbox.active_tool(event);
   if (event.ctrlKey || event.metaKey) {
     PixelGrid.scale_by(event.deltaY, origin);
   } else {
+    const start = origin.grid();
     PixelGrid.move_by(delta);
+    const end = origin.grid();
+    if (active_button) tool.on_drag(active_button, end, start);
   }
-  PixelGrid.render_preview(origin);
+  PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), origin);
 }
 function on_key_down(event) {
-  if (event.target !== document.body) return;
+  if (event.target === Picker.hex_input) return;
   switch (event.key) {
+    case " ":
+      Toolbox.pan_hotkey = true;
+      break;
     case "1":
     case "2":
     case "3":
-    case "4":
-    case "5":
-    case "6":
-    case "7":
-    case "8":
-    case "9":
-    case "0":
-      const index = (Number.parseInt(event.key) + 9) % 10;
-      ToolBox.set_active(ToolBox.pips[index]);
-      return;
+      Toolbox.set_active(Toolbox.tools[Number.parseInt(event.key) - 1]);
+      break;
     case "ArrowLeft":
       PixelGrid.move_by(Point.view(-16, 0, 0));
-      return;
+      break;
     case "ArrowRight":
       PixelGrid.move_by(Point.view(16, 0, 0));
-      return;
+      break;
     case "ArrowUp":
       PixelGrid.move_by(Point.view(0, -16, 0));
-      return;
+      break;
     case "ArrowDown":
       PixelGrid.move_by(Point.view(0, 16, 0));
-      return;
-    case "Control":
-    case "Meta":
-      ToolBox.update_cursor(pan_tool);
-      return;
-    case "Alt":
-      ToolBox.picker_cursor();
-      return;
-    case "c":
-      if (event.ctrlKey || event.metaKey) {
-        ToolBox.new_colour_pip();
-        event.preventDefault();
-      }
-      return;
+      break;
     case "s":
       if (event.ctrlKey || event.metaKey) {
         download_anchor.href = PixelGrid.canvas.toDataURL();
         download_anchor.click();
         event.preventDefault();
       }
-      return;
+      break;
     default:
       console.log(event.key);
   }
+  const tool = Toolbox.active_tool(event);
+  Toolbox.update_cursor(tool);
+  PixelGrid.update_preview(tool.preview_visible());
 }
 function on_key_up(event) {
-  if (event.ctrlKey || event.metaKey) {
-    ToolBox.update_cursor(pan_tool);
-  } else if (event.altKey) {
-    ToolBox.picker_cursor();
-  } else {
-    ToolBox.update_cursor();
+  if (event.key === " ") {
+    Toolbox.pan_hotkey = false;
   }
+  const tool = Toolbox.active_tool(event);
+  Toolbox.update_cursor(tool);
+  PixelGrid.update_preview(tool.preview_visible());
 }
 function register_listeners() {
   window.addEventListener("resize", on_resize);
@@ -12229,21 +12136,20 @@ function register_listeners() {
   PixelGrid.canvas.addEventListener("wheel", on_scroll, { passive: false });
   document.addEventListener("keydown", on_key_down);
   document.addEventListener("keyup", on_key_up);
-  document.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
   on_resize();
   on_hash();
 }
-var download_anchor, is_touching, active_button, last_point, pointers;
+var download_anchor, glasses, active_button, last_point, pointers;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
     init_point();
-    init_tool_box();
+    init_toolbox();
     init_picker();
-    init_pan_tool();
     init_config();
     download_anchor = document.getElementById("downloader");
-    is_touching = false;
+    glasses = document.getElementsByClassName("glass");
     active_button = null;
     last_point = null;
     pointers = {};
@@ -12255,10 +12161,12 @@ var require_main = __commonJS({
   "main.js"(exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var listeners_1 = (init_listeners(), __toCommonJS(listeners_exports));
-    var tool_box_1 = (init_tool_box(), __toCommonJS(tool_box_exports));
+    var toolbox_1 = (init_toolbox(), __toCommonJS(toolbox_exports));
     var picker_1 = (init_picker(), __toCommonJS(picker_exports));
+    var palette_1 = (init_palette(), __toCommonJS(palette_exports));
     (0, listeners_1.register_listeners)();
-    tool_box_1.ToolBox.initialise();
+    toolbox_1.Toolbox.initialise();
+    palette_1.Palette.initialise();
     picker_1.Picker.initialise();
   }
 });

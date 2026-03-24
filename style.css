@@ -36,7 +36,7 @@ html, body {
 
 canvas#pixel-grid {
     --cursor: auto;
-    --cursor-down: auto;
+    --cursor-down: var(--cursor);
     image-rendering: pixelated;
     overflow: hidden;
     touch-action: manipulation;
@@ -83,8 +83,12 @@ body.dragging canvas#pixel-grid {
     flex-direction: row;
 }
 
-.button {
-    --size: 20px;
+#tools {
+    display: flex;
+    flex-direction: row;
+}
+
+.tool {
     position: relative;
     width: 36px;
     height: 36px;
@@ -92,89 +96,39 @@ body.dragging canvas#pixel-grid {
     display: flex;
     justify-content: center;
     align-items: center;
+    background: none;
+    outline: none;
+    border: none;
+    padding: 0;
 }
 
-.button:hover {
-    --size: 26px;
-}
-
-.button.active {
-    --size: 32px;
-}
-
-.button.animate {
+.tool::before {
+    --size: 0;
+    content: '';
+    position: absolute;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px #0000007f;
     transition-property: --size;
 }
 
-.button::before {
-    content: '';
+.tool:hover::before {
+    --size: 20px;
+}
+
+.tool.active::before {
+    --size: 26px;
+}
+
+.tool svg {
     position: absolute;
-    top: calc(18px - var(--size) / 2);
-    left: calc(18px - var(--size) / 2);
-    width: var(--size);
-    height: var(--size);
-    background-color: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px #0000007f;
 }
 
-.icon {
-    width: 16px;
-    height: 16px;
-    background-color: black;
-}
-
-.icon-pan {
-    clip-path: polygon(
-        8px 0px,
-        16px 8px,
-        8px 16px,
-        0px 8px,
-        4px 4px,
-        4px 12px,
-        12px 12px,
-        12px 4px,
-        4px 4px
-    );
-}
-
-.icon-add {
-    clip-path: polygon(
-            7px 2px,
-            9px 2px,
-            9px 7px,
-            14px 7px,
-            14px 9px,
-            9px 9px,
-            9px 14px,
-            7px 14px,
-            7px 9px,
-            2px 9px,
-            2px 7px,
-            7px 7px
-    );
-}
-
-.icon-remove {
-    transform: rotate(45deg);
-    clip-path: polygon(
-            7px 2px,
-            9px 2px,
-            9px 7px,
-            14px 7px,
-            14px 9px,
-            9px 9px,
-            9px 14px,
-            7px 14px,
-            7px 9px,
-            2px 9px,
-            2px 7px,
-            7px 7px
-    );
-}
-
-.icon-pick {
-    clip-path: url(#icon-pick)
+#palette {
+    display: flex;
+    flex-direction: row;
 }
 
 .pip {
@@ -197,7 +151,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .pip::before {
-    --size: 16px;
+    --size: 22px;
     position: absolute;
     content: '';
     top: calc(16px - var(--size) / 2);
@@ -212,54 +166,16 @@ body.dragging canvas#pixel-grid {
     transition-property: --size, border-radius;
 }
 
+.pip:hover::before {
+    --size: 28px;
+}
+
 .pip.animate::before {
     transition-property: --size, border-radius, background-color;
 }
 
-#toolbox:not(:has(.pip.dragging)) .pip:hover::before,
-.pip.dragging::before {
-    --size: 22px;
-}
-
-#toolbox:not(:has(.pip.dragging)) .pip.active::before,
-.pip.active::before {
-    --size: 28px;
-}
-
 .pip.editing::before {
     border-top-left-radius: 4px;
-}
-
-#toolbox .badges .badge {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 12px;
-    height: 12px;
-    border-radius: 6px;
-    background-color: white;
-    color: black;
-    font-size: 10px;
-    font-family: monospace;
-    font-weight: bold;
-    transform: translate(var(--x), 0);
-    box-shadow: 0 2px 4px #0000007f;
-}
-
-#toolbox .badges .badge.button-0 {
-    left: 1px;
-    bottom: 1px;
-}
-
-#toolbox .badges .badge.button-1 {
-    left: 12px;
-    bottom: -2px;
-}
-
-#toolbox .badges .badge.button-2 {
-    right: 1px;
-    bottom: 1px;
 }
 
 #picker {
@@ -330,6 +246,7 @@ svg.hidden {
 }
 
 .glass {
+    position: absolute;
     background: #7f7f7fbf;
     border-top: 1px solid #ffffff7f;
     border-bottom: 1px solid #ffffff3f;

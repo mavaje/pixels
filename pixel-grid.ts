@@ -1,9 +1,6 @@
 import {Block} from "./db/block";
 import {Point} from "./point";
 import {DEBUG} from "./config";
-import {ToolBox} from "./tool-box";
-import {Pip} from "./pip";
-import {Picker} from "./picker";
 
 export class PixelGrid {
 
@@ -119,22 +116,16 @@ export class PixelGrid {
         }
     }
 
-    static render_preview(cursor: Point) {
-        const visible = Picker.pick_mode || (ToolBox.last_tool instanceof Pip);
-
+    static update_preview(visible: boolean, cursor?: Point) {
         this.pixel_preview.classList.toggle('hidden', !visible);
 
-        if (visible) {
+        if (cursor) {
             cursor = cursor.grid().floor().view();
             this.pixel_preview.style.width = `${this.scale - 2}px`;
             this.pixel_preview.style.height = `${this.scale - 2}px`;
             this.pixel_preview.style.left = `${cursor.x - 1}px`;
             this.pixel_preview.style.top = `${cursor.y - 1}px`;
         }
-    }
-
-    static hide_preview() {
-        this.pixel_preview.classList.add('hidden');
     }
 
     static move_to(centre: Point) {

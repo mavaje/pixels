@@ -1,11 +1,12 @@
 import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
-import {ToolBox} from "./tool-box";
+import {Toolbox} from "./toolbox";
 import {Picker} from "./picker";
-import {pan_tool} from "./pan-tool";
 import {FEATURE} from "./config";
 
 const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
+
+const glasses = document.getElementsByClassName('glass') as HTMLCollectionOf<HTMLElement>;
 
 function on_resize(event?: UIEvent) {
     PixelGrid.resize();
@@ -28,7 +29,6 @@ function on_hash(event?: HashChangeEvent) {
     }
 }
 
-let is_touching = false;
 let active_button = null;
 let last_point: Point = null;
 
@@ -37,26 +37,14 @@ let pointers: {
 } = {};
 
 function on_touch(event: PointerEvent) {
+    active_button = event.button;
     const point = Point.view(event.x, event.y);
 
-    is_touching = true;
     document.body.classList.add('dragging');
 
-    if (Picker.pick_mode || event.altKey) {
-        Picker.pick(point, Picker.pick_mode ? null : event.button);
-    } else {
-        if (event.ctrlKey || event.metaKey) {
-            ToolBox.update_cursor(pan_tool);
-        } else if ([0, 1, 2].includes(event.button)) {
-            active_button = event.button;
-            const tool = ToolBox.get_active(active_button);
-            ToolBox.update_cursor(tool);
-            if (!FEATURE.touch_controls || event.pointerType !== 'touch') {
-                tool.on_drag(point);
-            }
-        }
-
-        Picker.set_editing(null);
+    const tool = Toolbox.active_tool(event);
+    if (!FEATURE.touch_controls || event.pointerType !== 'touch') {
+        tool.on_drag(event.button, point);
     }
 
     last_point = point;
@@ -68,8 +56,11 @@ function on_move(event: PointerEvent) {
 
     pointers[event.pointerId] ??= [];
     pointers[event.pointerId].unshift(point);
+    pointers[event.pointerId].splice(2);
 
-    if (is_touching) {
+    const tool = Toolbox.active_tool(event);
+
+    if (active_button !== null) {
         if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
             const valid_pointers = Object.values(pointers).filter(p => p.length >= 2);
             const centre = Point.average(valid_pointers.map(p => p[0]));
@@ -80,62 +71,46 @@ function on_move(event: PointerEvent) {
                 const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
                 PixelGrid.scale_by(pinch / last_pinch, centre);
             }
-        } else if (Picker.pick_mode || event.altKey) {
-            Picker.pick(point, Picker.pick_mode ? null : active_button);
-        } else if (event.ctrlKey || event.metaKey) {
-            PixelGrid.move_by(last_point.view().minus(point));
-        } else if (active_button !== null) {
-            const tool = ToolBox.get_active(active_button);
-            tool.on_drag(point, last_point);
+        } else {
+            tool.on_drag(active_button, point, last_point);
         }
 
-        [
-            ToolBox.toolbox,
-            Picker.element,
-        ].forEach(element => {
-            const {x, y, width, height} = element.getBoundingClientRect();
-            if (Object.values(pointers).every(([_, point]) =>
+        for (const glass of glasses) {
+            const {x, y, width, height} = glass.getBoundingClientRect();
+            if (Object.values(pointers).every(([point]) =>
                 point.x > x - 16 && point.x < x + width + 16 &&
                 point.y > y - 16 && point.y < y + height + 16
             )) {
-                element.style.opacity = '0%';
+                glass.style.opacity = '0%';
             } else {
-                element.style.opacity = null;
+                glass.style.opacity = null;
             }
-        });
+        }
     }
 
-    if (event.target === PixelGrid.canvas) {
-        PixelGrid.render_preview(point);
-    }
+    PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), point);
 
     last_point = point;
 }
 
 function on_leave(event: PointerEvent) {
-    PixelGrid.hide_preview();
+    PixelGrid.update_preview(false, null);
 }
 
 function on_lift(event: PointerEvent) {
     if (active_button !== null) {
-        ToolBox.get_active(active_button).on_drag(last_point);
+        Toolbox.active_tool(event).on_drag(active_button, last_point);
     }
 
     delete pointers[event.pointerId];
     if (Object.entries(pointers).length === 0) {
-        is_touching = false;
         active_button = null;
         document.body.classList.remove('dragging');
-        ToolBox.toolbox.style.opacity = null;
-        Picker.element.style.opacity = null;
-    }
 
-    if (Picker.pick_mode) {
-        Picker.pick_mode = false;
-        Picker.pick_tool.classList.remove('active');
+        for (const glass of glasses) {
+            glass.style.opacity = null;
+        }
     }
-
-    ToolBox.update_cursor();
 }
 
 function on_scroll(event: WheelEvent) {
@@ -148,77 +123,71 @@ function on_scroll(event: WheelEvent) {
         0,
     );
 
+    const tool = Toolbox.active_tool(event);
+
     if (event.ctrlKey || event.metaKey) {
         PixelGrid.scale_by(event.deltaY, origin);
     } else {
+        const start = origin.grid();
         PixelGrid.move_by(delta);
+        const end = origin.grid();
+        if (active_button) tool.on_drag(active_button, end, start);
     }
 
-    PixelGrid.render_preview(origin);
+    PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), origin);
 }
 
 function on_key_down(event: KeyboardEvent) {
-    if (event.target !== document.body) return;
+    if (event.target === Picker.hex_input) return;
 
     switch (event.key) {
+        case ' ':
+            Toolbox.pan_hotkey = true;
+            break;
+
         case '1':
         case '2':
         case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '0':
-            const index = (Number.parseInt(event.key) + 9) % 10;
-            ToolBox.set_active(ToolBox.pips[index]);
-            return;
+            Toolbox.set_active(Toolbox.tools[Number.parseInt(event.key) - 1]);
+            break;
+
         case 'ArrowLeft':
             PixelGrid.move_by(Point.view(-16, 0, 0));
-            return;
+            break;
         case 'ArrowRight':
             PixelGrid.move_by(Point.view(16, 0, 0));
-            return;
+            break;
         case 'ArrowUp':
             PixelGrid.move_by(Point.view(0, -16, 0));
-            return;
+            break;
         case 'ArrowDown':
             PixelGrid.move_by(Point.view(0, 16, 0));
-            return;
-        case 'Control':
-        case 'Meta':
-            ToolBox.update_cursor(pan_tool);
-            return;
-        case 'Alt':
-            ToolBox.picker_cursor();
-            return;
-        case 'c':
-            if (event.ctrlKey || event.metaKey) {
-                ToolBox.new_colour_pip();
-                event.preventDefault();
-            }
-            return;
+            break;
+
         case 's':
             if (event.ctrlKey || event.metaKey) {
                 download_anchor.href = PixelGrid.canvas.toDataURL();
                 download_anchor.click();
                 event.preventDefault();
             }
-            return;
+            break;
         default:
             console.log(event.key);
     }
+
+    const tool = Toolbox.active_tool(event);
+    Toolbox.update_cursor(tool);
+    PixelGrid.update_preview(tool.preview_visible());
 }
 
 function on_key_up(event: KeyboardEvent) {
-    if (event.ctrlKey || event.metaKey) {
-        ToolBox.update_cursor(pan_tool);
-    } else if (event.altKey) {
-        ToolBox.picker_cursor();
-    } else {
-        ToolBox.update_cursor();
+    if (event.key === ' ') {
+        Toolbox.pan_hotkey = false;
     }
+
+    const tool = Toolbox.active_tool(event);
+    Toolbox.update_cursor(tool);
+    PixelGrid.update_preview(tool.preview_visible());
 }
 
 export function register_listeners() {
@@ -235,7 +204,7 @@ export function register_listeners() {
     document.addEventListener('keydown', on_key_down);
     document.addEventListener('keyup', on_key_up);
 
-    document.addEventListener('contextmenu', event => event.preventDefault(), {passive: false});
+    document.addEventListener('contextmenu', event => event.preventDefault());
 
     on_resize();
     on_hash();

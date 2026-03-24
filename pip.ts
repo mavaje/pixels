@@ -1,20 +1,16 @@
-import {ToolBox} from "./tool-box";
 import {Picker} from "./picker";
-import {Block} from "./db/block";
-import {Point} from "./point";
-import {Tool} from "./tool";
+import {Palette} from "./palette";
 
-export class Pip extends Tool {
+export class Pip {
 
-    constructor(public hex: string) {
-        super();
+    element: HTMLDivElement;
 
+    constructor(
+        public hex: string,
+        public button: number,
+    ) {
         this.element = document.createElement('div');
-        this.element.classList.add('pip');
-
-        this.badge_container = document.createElement('div');
-        this.badge_container.classList.add('badges');
-        this.element.append(this.badge_container);
+        this.element.classList.add('pip', `button-${button}`);
 
         this.set_hex(hex);
     }
@@ -31,8 +27,8 @@ export class Pip extends Tool {
                     dragged = true;
                     this.element.classList.add('dragging');
                 }
-                const index = ToolBox.pips.indexOf(this);
-                ToolBox.pips.forEach((pip, i) => {
+                const index = Palette.pips.indexOf(this);
+                Palette.pips.forEach((pip, i) => {
                     let x: number;
                     if (i === index) {
                         x = offset * width;
@@ -51,17 +47,17 @@ export class Pip extends Tool {
         document.addEventListener('pointerup', event => {
             if (dragged) {
                 const offset = this.drag_offset(event);
-                const index = ToolBox.pips.indexOf(this);
+                const index = Palette.pips.indexOf(this);
                 if (offset !== 0) {
                     const next_index = offset < 0
                         ? index + offset
                         : index + offset + 1;
-                    ToolBox.toolbox.insertBefore(this.element, ToolBox.pips[next_index]?.element ?? ToolBox.add_pip_button);
+                    Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
 
-                    ToolBox.pips.splice(index, 1);
-                    ToolBox.pips.splice(index + offset, 0, this);
+                    Palette.pips.splice(index, 1);
+                    Palette.pips.splice(index + offset, 0, this);
 
-                    ToolBox.save_palette_cookie();
+                    Palette.save_cookie();
                 }
             }
             clicked = false;
@@ -71,12 +67,8 @@ export class Pip extends Tool {
         });
         this.element.addEventListener('pointerup', event => {
             if (clicked) {
-                if (!dragged && [0, 1, 2].includes(event.button)) {
-                    const open_editor = Picker.pip
-                        ? Picker.pip !== this
-                        : ToolBox.active[event.button] === this;
-                    Picker.set_editing(open_editor ? this : null);
-                    ToolBox.set_active(this, event.button);
+                if (!dragged) {
+                    Picker.set_editing(Picker.pip === this ? null : this);
                 }
                 event.preventDefault();
             }
@@ -88,72 +80,19 @@ export class Pip extends Tool {
         const {x, width} = this.element.getBoundingClientRect();
         const pip_x = x + width / 2;
         let offset = Math.round((event.x - pip_x) / width);
-        const index = ToolBox.pips.indexOf(this);
-        return Math.min(Math.max(offset, -index), ToolBox.pips.length - 1 - index);
+        const index = Palette.pips.indexOf(this);
+        return Math.min(Math.max(offset, -index), Palette.pips.length - 1 - index);
     }
 
     set_hex(hex: string, animate = true) {
+        if (hex !== this.hex) {
+            this.element.classList.toggle('animate', animate);
+        }
         this.hex = hex;
-        this.element.classList.toggle('animate', animate);
         this.element.style.setProperty('--hex', hex);
     }
 
     editing(editing: boolean): void {
         this.element.classList.toggle('editing', editing);
-    }
-
-    on_drag(p1: Point, p2: Point = p1): void {
-        Block.draw_line(p1, p2, this.hex);
-    }
-
-    cookie_key(): string {
-        return ToolBox.pips.indexOf(this).toString();
-    }
-
-    cursor(): string {
-        const size = 24;
-        const width = 4;
-        const nib = 2;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const context = canvas.getContext('2d');
-
-        context.translate(0.5, 0.5);
-
-        context.beginPath();
-        context.moveTo(0, 0);
-        context.lineTo(nib + width, nib);
-        context.lineTo(nib, nib + width);
-        // context.bezierCurveTo(6, 4, 4, 6, 2, 6);
-        context.closePath();
-
-        context.moveTo(nib + width, nib);
-        context.lineTo(size - 1, size - 1 - width);
-        // context.bezierCurveTo(23, 21, 21, 23, 19, 23);
-        context.lineTo(size - 1 - width, size - 1);
-        context.lineTo(nib, nib + width);
-        // context.bezierCurveTo(4, 6, 6, 4, 6, 2);
-        context.closePath();
-
-        context.fillStyle = 'black';
-        context.fill();
-
-        context.strokeStyle = 'white';
-        context.lineWidth = 1;
-        context.stroke();
-
-        const dot_size = 12;
-
-        context.beginPath();
-        context.ellipse((dot_size - 1) / 2, size - 1 - (dot_size - 1) / 2, (dot_size - 1) / 2, (dot_size - 1) / 2, 0, 0, 2 * Math.PI);
-        context.fillStyle = this.hex;
-        context.fill();
-        context.stroke();
-
-
-
-        return `url(${canvas.toDataURL()}), auto`;
     }
 }
