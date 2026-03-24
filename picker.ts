@@ -29,7 +29,7 @@ export class Picker {
         this.hex_input.addEventListener('change', () => {
             const hex = Colour.clean_hex(this.hex_input.value, true);
             this.set_hex(hex);
-            this.update_sliders(hex);
+            this.update_sliders();
         });
         this.hex_input.addEventListener('keypress', event => {
             if (event.key === 'Enter') {
@@ -50,12 +50,13 @@ export class Picker {
         if (pip) {
             this.rgb = Colour.hex_to_rgb(pip.hex);
             this.hsl = Colour.hex_to_hsl(pip.hex);
-            this.update_sliders(pip.hex);
+            this.update_sliders();
             this.hex_input.value = pip.hex;
         }
     }
 
     static set_hex(hex: string, animate: boolean = true) {
+        this.element.classList.add('animate');
         this.pip.set_hex(hex, animate);
         this.rgb = Colour.hex_to_rgb(hex);
         this.hsl = Colour.hex_to_hsl(hex);
@@ -63,7 +64,7 @@ export class Picker {
         Palette.save_cookie();
     }
 
-    static update_sliders(hex: string) {
-        this.sliders.forEach(slider => slider.set_value(hex));
+    static update_sliders() {
+        this.sliders.forEach(slider => slider.set_value(this.pip.hex));
     }
 }

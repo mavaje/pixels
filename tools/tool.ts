@@ -31,7 +31,7 @@ export abstract class Tool {
         </svg>`.replace(/\s+/g, ' ');
     }
 
-    protected svg_cursor(path: string, fallback: string = 'auto') {
+    protected svg_cursor(path: string, fallback: string = 'crosshair') {
         return `url('data:image/svg+xml,${encodeURIComponent(this.svg_icon(path))}'), ${fallback}`;
     }
 

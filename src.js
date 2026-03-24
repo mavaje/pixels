@@ -11502,7 +11502,7 @@ var init_tool = __esm({
             </g>
         </svg>`.replace(/\s+/g, " ");
       }
-      svg_cursor(path, fallback = "auto") {
+      svg_cursor(path, fallback = "crosshair") {
         return `url('data:image/svg+xml,${encodeURIComponent(this.svg_icon(path))}'), ${fallback}`;
       }
       cursor() {
@@ -11669,7 +11669,7 @@ var init_picker = __esm({
         this.hex_input.addEventListener("change", () => {
           const hex = Colour.clean_hex(this.hex_input.value, true);
           this.set_hex(hex);
-          this.update_sliders(hex);
+          this.update_sliders();
         });
         this.hex_input.addEventListener("keypress", (event) => {
           if (event.key === "Enter") {
@@ -11686,19 +11686,20 @@ var init_picker = __esm({
         if (pip) {
           this.rgb = Colour.hex_to_rgb(pip.hex);
           this.hsl = Colour.hex_to_hsl(pip.hex);
-          this.update_sliders(pip.hex);
+          this.update_sliders();
           this.hex_input.value = pip.hex;
         }
       }
       static set_hex(hex, animate = true) {
+        this.element.classList.add("animate");
         this.pip.set_hex(hex, animate);
         this.rgb = Colour.hex_to_rgb(hex);
         this.hsl = Colour.hex_to_hsl(hex);
         this.hex_input.value = hex;
         Palette.save_cookie();
       }
-      static update_sliders(hex) {
-        this.sliders.forEach((slider) => slider.set_value(hex));
+      static update_sliders() {
+        this.sliders.forEach((slider) => slider.set_value(this.pip.hex));
       }
     };
   }
@@ -11715,7 +11716,7 @@ var init_pip = __esm({
         this.hex = hex;
         this.button = button;
         this.element = document.createElement("div");
-        this.element.classList.add("pip", `button-${button}`);
+        this.element.classList.add("pip", `button-${button}`, "animate");
         this.set_hex(hex);
       }
       initialise() {
@@ -11825,12 +11826,16 @@ var init_palette = __esm({
     init_pip();
     init_cookies();
     init_colour();
+    init_picker();
     Palette = class {
       static {
         this.element = document.getElementById("palette");
       }
       static {
         this.pips = [];
+      }
+      static {
+        this.button_map = [0, 2, 1];
       }
       static initialise() {
         const hexes = Cookies.load("palette");
@@ -11839,13 +11844,20 @@ var init_palette = __esm({
             this.set_pip(i, hex);
           });
         }
+        if (this.pips.length === 0) {
+          this.set_pip(0, "#000000");
+        }
       }
-      static set_pip(button, hex, animate = false) {
-        let pip = this.pips[button];
+      static set_pip(index, hex, animate = false) {
+        let pip = this.pips[index];
         if (pip) {
           pip.set_hex(hex, animate);
+          if (pip === Picker.pip) {
+            Picker.set_hex(hex);
+            Picker.update_sliders();
+          }
         } else {
-          pip = new Pip(hex, button);
+          pip = new Pip(hex, this.button_map.indexOf(index));
           pip.initialise();
           this.pips.push(pip);
           this.element.append(pip.element);
@@ -11879,12 +11891,10 @@ var init_pick_tool = __esm({
       on_drag(button, point, prev_point) {
         if (button !== null) {
           const hex = Block.pixel_at(point);
-          Palette.set_pip(button, hex, true);
+          const index = Palette.button_map[button];
+          Palette.set_pip(index, hex, true);
         }
       }
-      // cursor(): string {
-      //     return 'url(#icon-pick), crosshair';
-      // }
       preview_visible() {
         return true;
       }
@@ -11912,7 +11922,8 @@ var init_pen_tool = __esm({
         this.element = document.getElementById("pen-tool");
       }
       on_drag(button, point, prev_point = point) {
-        const pip = Palette.pips[button] ?? Palette.pips[0];
+        const index = Palette.button_map[button];
+        const pip = Palette.pips[index] ?? Palette.pips[0];
         Block.draw_line(point, prev_point, pip.hex);
       }
       icon() {

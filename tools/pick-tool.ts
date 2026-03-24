@@ -9,13 +9,10 @@ class PickTool extends Tool {
     on_drag(button: number, point: Point, prev_point?: Point) {
         if (button !== null) {
             const hex = Block.pixel_at(point);
-            Palette.set_pip(button, hex, true);
+            const index = Palette.button_map[button];
+            Palette.set_pip(index, hex, true);
         }
     }
-
-    // cursor(): string {
-    //     return 'url(#icon-pick), crosshair';
-    // }
 
     preview_visible(): boolean {
         return true;

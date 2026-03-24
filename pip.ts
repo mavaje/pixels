@@ -10,7 +10,7 @@ export class Pip {
         public button: number,
     ) {
         this.element = document.createElement('div');
-        this.element.classList.add('pip', `button-${button}`);
+        this.element.classList.add('pip', `button-${button}`, 'animate');
 
         this.set_hex(hex);
     }

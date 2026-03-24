@@ -7,7 +7,8 @@ class PenTool extends Tool {
     element = document.getElementById('pen-tool') as HTMLDivElement;
 
     on_drag(button: number, point: Point, prev_point: Point = point) {
-        const pip = Palette.pips[button] ?? Palette.pips[0];
+        const index = Palette.button_map[button];
+        const pip = Palette.pips[index] ?? Palette.pips[0];
         Block.draw_line(point, prev_point, pip.hex);
     }
 
