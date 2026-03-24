@@ -89,6 +89,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .tool {
+    --x: 0;
     position: relative;
     width: 36px;
     height: 36px;
@@ -96,6 +97,11 @@ body.dragging canvas#pixel-grid {
     display: flex;
     justify-content: center;
     align-items: center;
+    transform: translate(var(--x), 0);
+}
+
+.tool.animate {
+    transition-property: --x;
 }
 
 .tool::before {

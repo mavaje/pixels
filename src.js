@@ -11474,23 +11474,101 @@ var init_pixel_grid = __esm({
   }
 });
 
+// icon.ts
+var Icon;
+var init_icon = __esm({
+  "icon.ts"() {
+    Icon = class {
+      initialise() {
+        let clicked = false;
+        let dragged = false;
+        this.element.addEventListener("pointerdown", () => {
+          clicked = true;
+          const { x, width } = this.element.getBoundingClientRect();
+          this.x = x;
+          this.width = width;
+        });
+        document.addEventListener("pointermove", (event) => {
+          if (clicked) {
+            const offset = this.drag_offset(event);
+            if (offset !== 0) {
+              dragged = true;
+              this.element.classList.add("dragging");
+            }
+            const index = this.index();
+            this.siblings().forEach((child2, i) => {
+              let x;
+              if (i === index) {
+                x = offset * this.width;
+              } else if (index + offset <= i && i < index) {
+                x = this.width;
+              } else if (index < i && i <= index + offset) {
+                x = -this.width;
+              } else {
+                x = 0;
+              }
+              child2.classList.add("animate");
+              child2.style.setProperty("--x", `${x}px`);
+            });
+          }
+        });
+        document.addEventListener("pointerup", (event) => {
+          if (dragged) {
+            const offset = this.drag_offset(event);
+            if (offset !== 0) {
+              const index = this.index();
+              const next_index = offset < 0 ? index + offset : index + offset + 1;
+              this.siblings().forEach((child2) => child2.classList.remove("animate"));
+              this.parent().insertBefore(this.element, this.siblings()[next_index]);
+              this.on_move(index + offset, index);
+            }
+          }
+          clicked = false;
+          dragged = false;
+          this.element.style.removeProperty("--x");
+          this.element.classList.remove("animate", "dragging");
+        });
+        this.element.addEventListener("pointerup", (event) => {
+          if (clicked) {
+            if (!dragged) this.on_click();
+            event.preventDefault();
+          }
+        }, { passive: false });
+        this.element.addEventListener("contextmenu", (event) => event.preventDefault());
+      }
+      parent() {
+        return this.element.parentElement;
+      }
+      siblings() {
+        return [...this.parent().children];
+      }
+      index() {
+        return this.siblings().indexOf(this.element);
+      }
+      drag_offset(event) {
+        const pip_x = this.x + this.width / 2;
+        let offset = Math.round((event.x - pip_x) / this.width);
+        return Math.min(Math.max(offset, -this.index()), this.siblings().length - 1 - this.index());
+      }
+    };
+  }
+});
+
 // tools/tool.ts
 var Tool;
 var init_tool = __esm({
   "tools/tool.ts"() {
     init_toolbox();
-    Tool = class {
+    init_icon();
+    Tool = class extends Icon {
       initialise() {
-        let clicked = false;
+        super.initialise();
         this.element.innerHTML = this.svg_icon(this.icon());
-        this.element.addEventListener("pointerdown", () => clicked = true);
-        document.addEventListener("pointerup", () => clicked = false);
-        this.element.addEventListener("pointerup", (event) => {
-          if (clicked) {
-            Toolbox.set_active(this);
-            event.preventDefault();
-          }
-        });
+      }
+      on_click() {
+        Toolbox.set_active(this);
+      }
+      on_move(index, prev_index) {
       }
       set active(active) {
         this.element.classList.toggle("active", active);
@@ -11711,76 +11789,23 @@ var init_pip = __esm({
   "pip.ts"() {
     init_picker();
     init_palette();
-    Pip = class {
+    init_icon();
+    Pip = class extends Icon {
       constructor(hex, button) {
+        super();
         this.hex = hex;
         this.button = button;
         this.element = document.createElement("div");
         this.element.classList.add("pip", `button-${button}`, "animate");
         this.set_hex(hex);
       }
-      initialise() {
-        let clicked = false;
-        let dragged = false;
-        this.element.addEventListener("pointerdown", () => clicked = true);
-        document.addEventListener("pointermove", (event) => {
-          if (clicked) {
-            const { width } = this.element.getBoundingClientRect();
-            const offset = this.drag_offset(event);
-            if (offset !== 0) {
-              dragged = true;
-              this.element.classList.add("dragging");
-            }
-            const index = Palette.pips.indexOf(this);
-            Palette.pips.forEach((pip, i) => {
-              let x;
-              if (i === index) {
-                x = offset * width;
-              } else if (index + offset <= i && i < index) {
-                x = width;
-              } else if (index < i && i <= index + offset) {
-                x = -width;
-              } else {
-                x = 0;
-              }
-              pip.element.classList.add("animate");
-              pip.element.style.setProperty("--x", `${x}px`);
-            });
-          }
-        });
-        document.addEventListener("pointerup", (event) => {
-          if (dragged) {
-            const offset = this.drag_offset(event);
-            const index = Palette.pips.indexOf(this);
-            if (offset !== 0) {
-              const next_index = offset < 0 ? index + offset : index + offset + 1;
-              Palette.element.insertBefore(this.element, Palette.pips[next_index]?.element);
-              Palette.pips.splice(index, 1);
-              Palette.pips.splice(index + offset, 0, this);
-              Palette.save_cookie();
-            }
-          }
-          clicked = false;
-          dragged = false;
-          this.element.style.removeProperty("--x");
-          this.element.classList.remove("animate", "dragging");
-        });
-        this.element.addEventListener("pointerup", (event) => {
-          if (clicked) {
-            if (!dragged) {
-              Picker.set_editing(Picker.pip === this ? null : this);
-            }
-            event.preventDefault();
-          }
-        }, { passive: false });
-        this.element.addEventListener("contextmenu", (event) => event.preventDefault(), { passive: false });
+      on_click() {
+        Picker.set_editing(Picker.pip === this ? null : this);
       }
-      drag_offset(event) {
-        const { x, width } = this.element.getBoundingClientRect();
-        const pip_x = x + width / 2;
-        let offset = Math.round((event.x - pip_x) / width);
-        const index = Palette.pips.indexOf(this);
-        return Math.min(Math.max(offset, -index), Palette.pips.length - 1 - index);
+      on_move(index, prev_index) {
+        Palette.pips.splice(prev_index, 1);
+        Palette.pips.splice(index, 0, this);
+        Palette.save_cookie();
       }
       set_hex(hex, animate = true) {
         if (hex !== this.hex) {

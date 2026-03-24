@@ -1,22 +1,21 @@
 import {Point} from "../point";
 import {Toolbox} from "../toolbox";
+import {Icon} from "../icon";
 
-export abstract class Tool {
+export abstract class Tool extends Icon {
 
     element: HTMLDivElement;
 
     initialise() {
-        let clicked = false;
+        super.initialise();
         this.element.innerHTML = this.svg_icon(this.icon());
-        // this.element.style.setProperty('--icon', this.svg_icon(this.icon()));
-        this.element.addEventListener('pointerdown', () => clicked = true);
-        document.addEventListener('pointerup', () => clicked = false);
-        this.element.addEventListener('pointerup', event => {
-            if (clicked) {
-                Toolbox.set_active(this);
-                event.preventDefault();
-            }
-        });
+    }
+
+    on_click() {
+        Toolbox.set_active(this);
+    }
+
+    on_move(index: number, prev_index: number) {
     }
 
     set active(active: boolean) {
