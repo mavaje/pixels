@@ -3,6 +3,8 @@ import {Tool} from "./tool";
 import {PixelGrid} from "../pixel-grid";
 
 class PanTool extends Tool {
+
+    name = 'pan';
     element = document.getElementById('pan-tool') as HTMLDivElement;
 
     on_drag(button: number, point: Point, prev_point?: Point) {

@@ -11569,6 +11569,9 @@ var init_tool = __esm({
         Toolbox.set_active(this);
       }
       on_move(index, prev_index) {
+        Toolbox.tools.splice(prev_index, 1);
+        Toolbox.tools.splice(index, 0, this);
+        Toolbox.save_cookie();
       }
       set active(active) {
         this.element.classList.toggle("active", active);
@@ -11605,6 +11608,7 @@ var init_pan_tool = __esm({
     PanTool = class extends Tool {
       constructor() {
         super(...arguments);
+        this.name = "pan";
         this.element = document.getElementById("pan-tool");
       }
       on_drag(button, point, prev_point) {
@@ -11911,6 +11915,7 @@ var init_pick_tool = __esm({
     PickTool = class extends Tool {
       constructor() {
         super(...arguments);
+        this.name = "pick";
         this.element = document.getElementById("pick-tool");
       }
       on_drag(button, point, prev_point) {
@@ -11944,6 +11949,7 @@ var init_pen_tool = __esm({
     PenTool = class extends Tool {
       constructor() {
         super(...arguments);
+        this.name = "pen";
         this.element = document.getElementById("pen-tool");
       }
       on_drag(button, point, prev_point = point) {
@@ -11978,7 +11984,11 @@ var init_toolbox = __esm({
     init_pixel_grid();
     init_pick_tool();
     init_pen_tool();
+    init_cookies();
     Toolbox = class {
+      static {
+        this.element = document.getElementById("tools");
+      }
       static {
         this.tools = [
           pan_tool,
@@ -11990,6 +12000,20 @@ var init_toolbox = __esm({
         this.pan_hotkey = false;
       }
       static initialise() {
+        const cookie = Cookies.load("tools");
+        if (cookie) {
+          const tools = [];
+          cookie.split(",").forEach((name4) => {
+            const tool = this.tools.find((t) => t.name === name4);
+            if (tool && !tools.includes(tool)) tools.push(tool);
+          });
+          this.tools.forEach((tool) => {
+            if (!tools.includes(tool)) tools.push(tool);
+          });
+          this.tools = tools;
+          this.element.innerText = "";
+          this.element.append(...this.tools.map((t) => t.element));
+        }
         this.tools.forEach((tool) => {
           tool.initialise();
         });
@@ -12012,6 +12036,9 @@ var init_toolbox = __esm({
       static update_cursor(tool = this.active) {
         PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
         PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
+      }
+      static save_cookie() {
+        Cookies.save("tools", this.tools.map((p) => p.name));
       }
     };
   }

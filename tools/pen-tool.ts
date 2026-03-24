@@ -4,6 +4,8 @@ import {Block} from "../db/block";
 import {Palette} from "../palette";
 
 class PenTool extends Tool {
+
+    name = 'pen';
     element = document.getElementById('pen-tool') as HTMLDivElement;
 
     on_drag(button: number, point: Point, prev_point: Point = point) {

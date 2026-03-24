@@ -4,6 +4,7 @@ import {Icon} from "../icon";
 
 export abstract class Tool extends Icon {
 
+    name: string;
     element: HTMLDivElement;
 
     initialise() {
@@ -16,6 +17,9 @@ export abstract class Tool extends Icon {
     }
 
     on_move(index: number, prev_index: number) {
+        Toolbox.tools.splice(prev_index, 1);
+        Toolbox.tools.splice(index, 0, this);
+        Toolbox.save_cookie();
     }
 
     set active(active: boolean) {
