@@ -12173,8 +12173,6 @@ function on_key_down(event) {
         event.preventDefault();
       }
       break;
-    default:
-      console.log(event.key);
   }
   const tool = Toolbox.active_tool(event);
   Toolbox.update_cursor(tool);

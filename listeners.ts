@@ -171,8 +171,6 @@ function on_key_down(event: KeyboardEvent) {
                 event.preventDefault();
             }
             break;
-        default:
-            console.log(event.key);
     }
 
     const tool = Toolbox.active_tool(event);
