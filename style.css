@@ -246,10 +246,6 @@ body.dragging canvas#pixel-grid {
     pointer-events: none;
 }
 
-svg.hidden {
-    position: absolute;
-}
-
 .glass {
     position: absolute;
     background: #7f7f7fbf;

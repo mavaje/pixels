@@ -11563,7 +11563,15 @@ var init_tool = __esm({
     Tool = class extends Icon {
       initialise() {
         super.initialise();
-        this.element.innerHTML = this.svg_icon(this.icon());
+        const svg = this.element.getElementsByTagName("svg")[0];
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttribute("viewBox", "-0.5 -0.5 24 24");
+        svg.setAttribute("width", "24");
+        svg.setAttribute("height", "24");
+        svg.setAttribute("fill", "black");
+        svg.setAttribute("stroke", "white");
+        svg.setAttribute("stroke-width", "1");
+        svg.setAttribute("stroke-linejoin", "round");
       }
       on_click() {
         Toolbox.set_active(this);
@@ -11583,11 +11591,9 @@ var init_tool = __esm({
             </g>
         </svg>`.replace(/\s+/g, " ");
       }
-      svg_cursor(path, fallback = "crosshair") {
-        return `url('data:image/svg+xml,${encodeURIComponent(this.svg_icon(path))}'), ${fallback}`;
-      }
       cursor() {
-        return this.svg_cursor(this.icon());
+        const svg = encodeURIComponent(this.element.innerHTML);
+        return `url('data:image/svg+xml,${svg}'), crosshair`;
       }
       cursor_down() {
         return "var(--cursor)";
@@ -11613,11 +11619,6 @@ var init_pan_tool = __esm({
       }
       on_drag(button, point, prev_point) {
         if (prev_point) PixelGrid.move_by(prev_point.view().minus(point));
-      }
-      icon() {
-        return `
-            <polygon points="11.5,0 16.5,5 13,5 13,10 18,10 18,6.5 23,11.5 18,16.5 18,13 13,13 13,18 16.5,18 11.5,23 6.5,18 10,18 10,13 5,13 5,16.5 0,11.5 5,6.5 5,10 10,10 10,5 6.5,5"/>
-        `;
       }
       cursor() {
         return "grab";
@@ -11928,12 +11929,6 @@ var init_pick_tool = __esm({
       preview_visible() {
         return true;
       }
-      icon() {
-        return `
-            <polygon points="0,0 3,0 18,15 15,18 0,3"/>
-            <path d="M16,8 L18,10 C14,14 23,14 23,18  23,21 21,23 18,23  14,23 14,14 10,18 L8,16 Z"/>
-        `;
-      }
     };
     pick_tool = new PickTool();
   }
@@ -11956,13 +11951,6 @@ var init_pen_tool = __esm({
         const index = Palette.button_map[button];
         const pip = Palette.pips[index] ?? Palette.pips[0];
         Block.draw_line(point, prev_point, pip.hex);
-      }
-      icon() {
-        return `
-            <polygon points="0,0 6,2 23,19 19,23 2,6"/>
-            <line x1="2" y1="6" x2="6" y2="2"/>
-            <line x1="16" y1="20" x2="20" y2="16"/>
-        `;
       }
       preview_visible() {
         return true;
@@ -12217,6 +12205,57 @@ var init_listeners = __esm({
   }
 });
 
+// favicon.ts
+var favicon_exports = {};
+__export(favicon_exports, {
+  Favicon: () => Favicon
+});
+var Favicon;
+var init_favicon = __esm({
+  "favicon.ts"() {
+    Favicon = class {
+      static {
+        this.element = document.getElementById("favicon");
+      }
+      static icon(offset) {
+        let o = 0;
+        const dot = (x, y) => `<rect x="${x}" y="${y}" width="1" height="1" fill="hsl(${360 * (o++ / 18 + offset)},100%,50%)"/>`;
+        const svg = `
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="-0.5 -0.5 8 8"
+            >
+                ${dot(1, 0)}
+                ${dot(2, 0)}
+                ${dot(3, 1)}
+                ${dot(3, 2)}
+                
+                ${dot(3, 4)}
+                ${dot(3, 5)}
+                ${dot(4, 6)}
+                ${dot(5, 6)}
+                ${dot(6, 5)}
+                ${dot(16, 4)}
+                ${dot(5, 3)}
+                ${dot(4, 3)}
+                ${dot(3, 3)}
+                ${dot(2, 3)}
+                ${dot(1, 3)}
+                ${dot(0, 2)}
+                ${dot(0, 1)}
+            </svg>
+        `.replace(/\s+/g, " ");
+        return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+      }
+      static cycle() {
+        const offset = Date.now() / 1e4 % 1;
+        this.element.href = this.icon(offset);
+        setTimeout(() => this.cycle(), 100);
+      }
+    };
+  }
+});
+
 // main.js
 var require_main = __commonJS({
   "main.js"(exports) {
@@ -12225,6 +12264,8 @@ var require_main = __commonJS({
     var toolbox_1 = (init_toolbox(), __toCommonJS(toolbox_exports));
     var picker_1 = (init_picker(), __toCommonJS(picker_exports));
     var palette_1 = (init_palette(), __toCommonJS(palette_exports));
+    var favicon_1 = (init_favicon(), __toCommonJS(favicon_exports));
+    favicon_1.Favicon.cycle();
     (0, listeners_1.register_listeners)();
     toolbox_1.Toolbox.initialise();
     palette_1.Palette.initialise();

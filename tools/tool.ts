@@ -9,7 +9,15 @@ export abstract class Tool extends Icon {
 
     initialise() {
         super.initialise();
-        this.element.innerHTML = this.svg_icon(this.icon());
+        const svg = this.element.getElementsByTagName('svg')[0];
+        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svg.setAttribute('viewBox', '-0.5 -0.5 24 24');
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+        svg.setAttribute('fill', 'black');
+        svg.setAttribute('stroke', 'white');
+        svg.setAttribute('stroke-width', '1');
+        svg.setAttribute('stroke-linejoin', 'round');
     }
 
     on_click() {
@@ -34,12 +42,9 @@ export abstract class Tool extends Icon {
         </svg>`.replace(/\s+/g, ' ');
     }
 
-    protected svg_cursor(path: string, fallback: string = 'crosshair') {
-        return `url('data:image/svg+xml,${encodeURIComponent(this.svg_icon(path))}'), ${fallback}`;
-    }
-
     cursor(): string {
-        return this.svg_cursor(this.icon());
+        const svg = encodeURIComponent(this.element.innerHTML);
+        return `url('data:image/svg+xml,${svg}'), crosshair`;
     }
 
     cursor_down(): string {
@@ -50,6 +55,5 @@ export abstract class Tool extends Icon {
         return false;
     }
 
-    abstract icon(): string;
     abstract on_drag(button: number, point: Point, prev_point?: Point): void;
 }

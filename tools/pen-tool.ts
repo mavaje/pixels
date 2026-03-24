@@ -14,14 +14,6 @@ class PenTool extends Tool {
         Block.draw_line(point, prev_point, pip.hex);
     }
 
-    icon(): string {
-        return `
-            <polygon points="0,0 6,2 23,19 19,23 2,6"/>
-            <line x1="2" y1="6" x2="6" y2="2"/>
-            <line x1="16" y1="20" x2="20" y2="16"/>
-        `;
-    }
-
     preview_visible(): boolean {
         return true;
     }

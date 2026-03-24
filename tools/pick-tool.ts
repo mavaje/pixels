@@ -19,13 +19,6 @@ class PickTool extends Tool {
     preview_visible(): boolean {
         return true;
     }
-
-    icon(): string {
-        return `
-            <polygon points="0,0 3,0 18,15 15,18 0,3"/>
-            <path d="M16,8 L18,10 C14,14 23,14 23,18  23,21 21,23 18,23  14,23 14,14 10,18 L8,16 Z"/>
-        `;
-    }
 }
 
 export const pick_tool = new PickTool();
