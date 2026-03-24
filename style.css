@@ -156,15 +156,15 @@ body.dragging canvas#pixel-grid {
 }
 
 .pip::before {
-    --size: 22px;
+    --size: 24px;
     position: absolute;
     content: '';
-    top: calc(16px - var(--size) / 2);
-    left: calc(16px - var(--size) / 2);
+    top: calc(17px - var(--size) / 2);
+    left: calc(17px - var(--size) / 2);
     width: var(--size);
     height: var(--size);
     background-color: var(--hex);
-    border: 2px solid white;
+    border: 1px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
     transform: translate(var(--x), 0) rotate(45deg);
@@ -172,7 +172,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .pip:hover::before {
-    --size: 28px;
+    --size: 30px;
 }
 
 .pip.animate::before {
@@ -180,7 +180,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .pip.editing::before {
-    border-top-left-radius: 4px;
+    border-top-left-radius: 1px;
 }
 
 #picker {
@@ -216,21 +216,21 @@ body.dragging canvas#pixel-grid {
 }
 
 .slider .knob {
-    --size: 16px;
+    --size: 18px;
     --value: 0;
     position: absolute;
-    top: calc(16px - var(--size) / 2);
-    left: calc((100% - 36px) * var(--value) + 16px - var(--size) / 2);
+    top: calc(17px - var(--size) / 2);
+    left: calc(17px - var(--size) / 2 + (100% - 36px) * var(--value));
     width: var(--size);
     height: var(--size);
-    border: 2px solid white;
+    border: 1px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
     transition-property: --size;
 }
 
 .slider:hover .knob {
-    --size: 22px;
+    --size: 24px;
 }
 
 .animate .slider.animate {
@@ -270,7 +270,7 @@ body.dragging .glass {
 input {
     background: #0000007f;
     outline: none;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
     border-radius: 12px;
     color: white;
     font-size: 16px;
@@ -286,21 +286,20 @@ input {
 
 input:hover,
 input:focus-visible {
-    border: 2px solid white;
+    border-color: white;
     box-shadow: 0 2px 4px #0000007f;
 }
 
 .hr,
 .vr {
     background: white;
-    opacity: 50%;
     margin: 4px;
 }
 
 .hr {
-    height: 2px;
+    height: 1px;
 }
 
 .vr {
-    width: 2px;
+    width: 1px;
 }
