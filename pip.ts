@@ -55,9 +55,9 @@ export class Pip extends Icon {
     tooltip() {
         const hex = this.hex.toUpperCase();
         const button = [
-            'M1',
-            'M3',
-            'M2',
+            'LMB',
+            'MMB',
+            'RMB',
         ][this.button];
         return `[${button}] ${hex}`;
     }

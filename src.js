@@ -11900,9 +11900,9 @@ var init_pip = __esm({
       tooltip() {
         const hex = this.hex.toUpperCase();
         const button = [
-          "M1",
-          "M3",
-          "M2"
+          "LMB",
+          "MMB",
+          "RMB"
         ][this.button];
         return `[${button}] ${hex}`;
       }
