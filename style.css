@@ -39,7 +39,7 @@ canvas#pixel-grid {
     --cursor-down: var(--cursor);
     image-rendering: pixelated;
     overflow: hidden;
-    touch-action: manipulation;
+    touch-action: none;
     cursor: var(--cursor);
 }
 
