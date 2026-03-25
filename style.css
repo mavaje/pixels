@@ -257,7 +257,7 @@ body.dragging canvas#pixel-grid {
     background: #7f7f7fbf;
     border-top: 1px solid #ffffff7f;
     border-bottom: 1px solid #ffffff3f;
-    border-radius: 22px;
+    border-radius: 23px;
     padding: 4px 5px;
     transition-property: opacity;
 }
@@ -298,7 +298,7 @@ input:focus-visible {
 
 .hr,
 .vr {
-    background: white;
+    background: #ffffff7f;
     margin: 4px;
 }
 

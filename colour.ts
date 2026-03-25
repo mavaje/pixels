@@ -46,11 +46,11 @@ export class Colour {
         const l = (min + max) / 2;
         const scale = 1 - Math.abs(2 * l - 1);
         const s = scale > 0 ? range / scale : 0;
-        const h = min === max ? 0 : {
+        const h = range > 0 ? {
             [r]: (g - b) / (6 * range) + 1,
             [g]: (b - r) / (6 * range) + 1 / 3,
             [b]: (r - g) / (6 * range) + 2 / 3,
-        }[max] % 1;
+        }[max] % 1 : 0;
         return {h, s, l};
     }
 
