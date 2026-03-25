@@ -117,14 +117,16 @@ export class PixelGrid {
     }
 
     static update_preview(visible: boolean, cursor?: Point) {
+        if (this.scale < 3) visible = false;
+
         this.pixel_preview.classList.toggle('hidden', !visible);
 
         if (cursor) {
             cursor = cursor.grid().floor().view();
             this.pixel_preview.style.width = `${this.scale - 2}px`;
             this.pixel_preview.style.height = `${this.scale - 2}px`;
-            this.pixel_preview.style.left = `${cursor.x - 1}px`;
-            this.pixel_preview.style.top = `${cursor.y - 1}px`;
+            this.pixel_preview.style.left = `${cursor.x}px`;
+            this.pixel_preview.style.top = `${cursor.y}px`;
         }
     }
 
