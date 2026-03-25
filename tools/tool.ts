@@ -58,10 +58,12 @@ export abstract class Tool extends Icon {
     tooltip(): string {
         const name = this.name[0].toUpperCase() + this.name.slice(1);
         const button = Toolbox.tools.indexOf(this) + 1;
-        const hotkey = this.hotkey
-            ? `(hold ${this.hotkey.replace(' ', 'Space')})`
-            : '';
-        return `[${button}] ${name} ${hotkey}`;
+        const hotkey = {
+            ' ': 'space',
+            'Alt': navigator.userAgent.includes('Mac') ? 'option' : 'alt',
+        }[this.hotkey] || this.hotkey || '';
+        const hotkey_text = hotkey ? ` (hold ${hotkey})` : '';
+        return `[${button}] ${name}${hotkey_text}`;
     }
 
     abstract on_drag(button: number, point: Point, prev_point?: Point): void;

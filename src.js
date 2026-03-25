@@ -11636,8 +11636,12 @@ var init_tool = __esm({
       tooltip() {
         const name4 = this.name[0].toUpperCase() + this.name.slice(1);
         const button = Toolbox.tools.indexOf(this) + 1;
-        const hotkey = this.hotkey ? `(hold ${this.hotkey.replace(" ", "Space")})` : "";
-        return `[${button}] ${name4} ${hotkey}`;
+        const hotkey = {
+          " ": "space",
+          "Alt": navigator.userAgent.includes("Mac") ? "option" : "alt"
+        }[this.hotkey] || this.hotkey || "";
+        const hotkey_text = hotkey ? ` (hold ${hotkey})` : "";
+        return `[${button}] ${name4}${hotkey_text}`;
       }
     };
   }
