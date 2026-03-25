@@ -11,7 +11,7 @@ export class Block {
     public static readonly SIZE = 256;
 
     public static readonly PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
-    public static readonly PIXEL_VALUE_FORMAT = /^[0-9a-f]{3}|[0-9a-f]{6}$/;
+    public static readonly PIXEL_VALUE_FORMAT = /^([0-9a-f]{3}|[0-9a-f]{6})$/;
 
     public static blocks: {
         [id: string]: Block;
@@ -96,6 +96,7 @@ export class Block {
 
             const [px, py] = p.pixel().xy();
             Block.blocks[block_id]?.set_pixel([px, py], hex);
+
 
             if (p.equals(p2)) break;
             const e2 = error * 2;

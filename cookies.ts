@@ -2,7 +2,7 @@
 export class Cookies {
 
     static save(name: string, value: any) {
-        document.cookie = `${name}=${value}`;
+        document.cookie = `${name}=${value}; max-age=${90 * 24 * 3600}`;
     }
 
     static load(name: string): string {

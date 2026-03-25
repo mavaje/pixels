@@ -11105,7 +11105,7 @@ var init_block = __esm({
         this.PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
       }
       static {
-        this.PIXEL_VALUE_FORMAT = /^[0-9a-f]{3}|[0-9a-f]{6}$/;
+        this.PIXEL_VALUE_FORMAT = /^([0-9a-f]{3}|[0-9a-f]{6})$/;
       }
       static {
         this.blocks = {};
@@ -11916,7 +11916,7 @@ var init_cookies = __esm({
   "cookies.ts"() {
     Cookies = class {
       static save(name4, value) {
-        document.cookie = `${name4}=${value}`;
+        document.cookie = `${name4}=${value}; max-age=${90 * 24 * 3600}`;
       }
       static load(name4) {
         for (const cookie of document.cookie.split(/;\s*/g)) {
