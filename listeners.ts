@@ -202,6 +202,8 @@ export function register_listeners() {
 
     document.addEventListener('contextmenu', event => event.preventDefault());
 
+    window.addEventListener('blur', () => Toolbox.set_hot(null));
+
     on_resize();
     on_hash();
 }

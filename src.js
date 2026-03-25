@@ -12279,6 +12279,7 @@ function register_listeners() {
   document.addEventListener("keydown", on_key_down);
   document.addEventListener("keyup", on_key_up);
   document.addEventListener("contextmenu", (event) => event.preventDefault());
+  window.addEventListener("blur", () => Toolbox.set_hot(null));
   on_resize();
   on_hash();
 }
