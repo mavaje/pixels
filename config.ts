@@ -4,5 +4,5 @@ export const DEBUG = {
 };
 
 export const FEATURE = {
-    touch_controls: false,
+    touch_controls: true,
 }
