@@ -1,21 +1,26 @@
 import {Picker} from "./picker";
 import {Palette} from "./palette";
 import {Icon} from "./icon";
+import {Tooltip} from "./tooltip";
 
 export class Pip extends Icon {
 
-    element: HTMLDivElement;
+    element: HTMLDivElement = document.createElement('div');
 
     constructor(
         public hex: string,
         public button: number,
     ) {
         super();
+    }
 
-        this.element = document.createElement('div');
-        this.element.classList.add('pip', `button-${button}`, 'animate');
+    initialise() {
+        super.initialise();
+        this.element.classList.add('pip', 'animate');
+        this.set_button(this.button);
+        this.set_hex(this.hex);
 
-        this.set_hex(hex);
+        Tooltip.show_on(this.element, () => this.tooltip());
     }
 
     on_click() {
@@ -25,7 +30,14 @@ export class Pip extends Icon {
     on_move(index: number, prev_index: number) {
         Palette.pips.splice(prev_index, 1);
         Palette.pips.splice(index, 0, this);
+        Palette.update_buttons();
         Palette.save_cookie();
+    }
+
+    set_button(button: number) {
+        this.button = button;
+        this.element.classList.remove('button-0', 'button-1', 'button-2');
+        this.element.classList.add(`button-${button}`);
     }
 
     set_hex(hex: string, animate = true) {
@@ -38,5 +50,15 @@ export class Pip extends Icon {
 
     editing(editing: boolean): void {
         this.element.classList.toggle('editing', editing);
+    }
+
+    tooltip() {
+        const hex = this.hex.toUpperCase();
+        const button = [
+            'M1',
+            'M3',
+            'M2',
+        ][this.button];
+        return `[${button}] ${hex}`;
     }
 }

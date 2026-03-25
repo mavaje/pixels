@@ -3,10 +3,10 @@ import {Tool} from "./tool";
 import {Block} from "../db/block";
 import {Palette} from "../palette";
 
-class PenTool extends Tool {
+class DrawTool extends Tool {
 
-    name = 'pen';
-    element = document.getElementById('pen-tool') as HTMLDivElement;
+    name = 'draw';
+    element = document.getElementById('draw-tool') as HTMLDivElement;
 
     on_drag(button: number, point: Point, prev_point: Point = point) {
         const index = Palette.button_map[button];
@@ -19,4 +19,4 @@ class PenTool extends Tool {
     }
 }
 
-export const pen_tool = new PenTool();
+export const draw_tool = new DrawTool();

@@ -22,7 +22,7 @@ export class Favicon {
                 ${dot(4, 6)}
                 ${dot(5, 6)}
                 ${dot(6, 5)}
-                ${dot(16, 4)}
+                ${dot(6, 4)}
                 ${dot(5, 3)}
                 ${dot(4, 3)}
                 ${dot(3, 3)}

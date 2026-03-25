@@ -1,11 +1,13 @@
 import {Point} from "../point";
 import {Toolbox} from "../toolbox";
 import {Icon} from "../icon";
+import {Tooltip} from "../tooltip";
 
 export abstract class Tool extends Icon {
 
     name: string;
     element: HTMLDivElement;
+    hotkey?: string;
 
     initialise() {
         super.initialise();
@@ -18,6 +20,8 @@ export abstract class Tool extends Icon {
         svg.setAttribute('stroke', 'white');
         svg.setAttribute('stroke-width', '1');
         svg.setAttribute('stroke-linejoin', 'round');
+
+        Tooltip.show_on(this.element, () => this.tooltip());
     }
 
     on_click() {
@@ -34,12 +38,8 @@ export abstract class Tool extends Icon {
         this.element.classList.toggle('active', active);
     }
 
-    protected svg_icon(path: string): string {
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-            <g fill="black" stroke="white" stroke-width="1" stroke-linejoin="round" transform="translate(0.5,0.5)">
-                ${path}
-            </g>
-        </svg>`.replace(/\s+/g, ' ');
+    set hot(hot: boolean) {
+        this.element.classList.toggle('hot', hot);
     }
 
     cursor(): string {
@@ -53,6 +53,15 @@ export abstract class Tool extends Icon {
 
     preview_visible(): boolean {
         return false;
+    }
+
+    tooltip(): string {
+        const name = this.name[0].toUpperCase() + this.name.slice(1);
+        const button = Toolbox.tools.indexOf(this) + 1;
+        const hotkey = this.hotkey
+            ? `(hold ${this.hotkey.replace(' ', 'Space')})`
+            : '';
+        return `[${button}] ${name} ${hotkey}`;
     }
 
     abstract on_drag(button: number, point: Point, prev_point?: Point): void;

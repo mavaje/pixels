@@ -42,7 +42,7 @@ function on_touch(event: PointerEvent) {
 
     document.body.classList.add('dragging');
 
-    const tool = Toolbox.active_tool(event);
+    const tool = Toolbox.active_tool();
     if (!FEATURE.touch_controls || event.pointerType !== 'touch') {
         tool.on_drag(event.button, point);
     }
@@ -58,7 +58,7 @@ function on_move(event: PointerEvent) {
     pointers[event.pointerId].unshift(point);
     pointers[event.pointerId].splice(2);
 
-    const tool = Toolbox.active_tool(event);
+    const tool = Toolbox.active_tool();
 
     if (active_button !== null) {
         if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
@@ -99,7 +99,7 @@ function on_leave(event: PointerEvent) {
 
 function on_lift(event: PointerEvent) {
     if (active_button !== null) {
-        Toolbox.active_tool(event).on_drag(active_button, last_point);
+        Toolbox.active_tool().on_drag(active_button, last_point);
     }
 
     delete pointers[event.pointerId];
@@ -123,7 +123,7 @@ function on_scroll(event: WheelEvent) {
         0,
     );
 
-    const tool = Toolbox.active_tool(event);
+    const tool = Toolbox.active_tool();
 
     if (event.ctrlKey || event.metaKey) {
         PixelGrid.scale_by(event.deltaY, origin);
@@ -141,10 +141,6 @@ function on_key_down(event: KeyboardEvent) {
     if (event.target === Picker.hex_input) return;
 
     switch (event.key) {
-        case ' ':
-            Toolbox.pan_hotkey = true;
-            break;
-
         case '1':
         case '2':
         case '3':
@@ -173,19 +169,21 @@ function on_key_down(event: KeyboardEvent) {
             break;
     }
 
-    const tool = Toolbox.active_tool(event);
-    Toolbox.update_cursor(tool);
-    PixelGrid.update_preview(tool.preview_visible());
+    Toolbox.tools.forEach(tool => {
+        if (tool.hotkey === event.key) {
+            Toolbox.set_hot(tool);
+        }
+    });
+
+    Toolbox.update_cursor();
 }
 
 function on_key_up(event: KeyboardEvent) {
-    if (event.key === ' ') {
-        Toolbox.pan_hotkey = false;
+    if (event.key === Toolbox.hot?.hotkey) {
+        Toolbox.set_hot(null);
     }
 
-    const tool = Toolbox.active_tool(event);
-    Toolbox.update_cursor(tool);
-    PixelGrid.update_preview(tool.preview_visible());
+    Toolbox.update_cursor();
 }
 
 export function register_listeners() {

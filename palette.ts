@@ -53,6 +53,12 @@ export class Palette {
         return pip;
     }
 
+    static update_buttons() {
+        this.pips.forEach((pip, index) => {
+            pip.set_button(this.button_map[index]);
+        });
+    }
+
     static save_cookie() {
         Cookies.save('palette', this.pips.map(p => p.hex));
     }

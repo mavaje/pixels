@@ -7,6 +7,7 @@ class PickTool extends Tool {
 
     name = 'pick';
     element = document.getElementById('pick-tool') as HTMLDivElement;
+    hotkey = 'Alt';
 
     on_drag(button: number, point: Point, prev_point?: Point) {
         if (button !== null) {

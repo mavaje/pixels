@@ -11554,12 +11554,47 @@ var init_icon = __esm({
   }
 });
 
+// tooltip.ts
+var Tooltip;
+var init_tooltip = __esm({
+  "tooltip.ts"() {
+    Tooltip = class {
+      static {
+        this.element = document.getElementById("tooltip");
+      }
+      static show_on(target, content, space) {
+        target.addEventListener("pointermove", () => {
+          this.show(target, typeof content === "function" ? content() : content, space);
+        });
+        target.addEventListener("pointerleave", () => this.hide());
+      }
+      static show(target, content, space = 4) {
+        const { x, y, width } = target.getBoundingClientRect();
+        this.element.innerHTML = content;
+        const tt = this.element.getBoundingClientRect();
+        const left = Math.min(
+          x + (width - tt.width) / 2,
+          window.innerWidth - tt.width - 4
+        );
+        const top = y - tt.height - space;
+        this.element.style.left = `${left}px`;
+        this.element.style.top = `${top}px`;
+        this.element.classList.remove("hidden");
+      }
+      static hide() {
+        this.element.classList.add("hidden");
+      }
+    };
+  }
+});
+
 // tools/tool.ts
 var Tool;
 var init_tool = __esm({
   "tools/tool.ts"() {
     init_toolbox();
     init_icon();
+    init_tooltip();
     Tool = class extends Icon {
       initialise() {
         super.initialise();
@@ -11572,6 +11607,7 @@ var init_tool = __esm({
         svg.setAttribute("stroke", "white");
         svg.setAttribute("stroke-width", "1");
         svg.setAttribute("stroke-linejoin", "round");
+        Tooltip.show_on(this.element, () => this.tooltip());
       }
       on_click() {
         Toolbox.set_active(this);
@@ -11584,12 +11620,8 @@ var init_tool = __esm({
       set active(active) {
         this.element.classList.toggle("active", active);
       }
-      svg_icon(path) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-            <g fill="black" stroke="white" stroke-width="1" stroke-linejoin="round" transform="translate(0.5,0.5)">
-                ${path}
-            </g>
-        </svg>`.replace(/\s+/g, " ");
+      set hot(hot) {
+        this.element.classList.toggle("hot", hot);
       }
       cursor() {
         const svg = encodeURIComponent(this.element.innerHTML);
@@ -11601,21 +11633,28 @@ var init_tool = __esm({
       preview_visible() {
         return false;
       }
+      tooltip() {
+        const name4 = this.name[0].toUpperCase() + this.name.slice(1);
+        const button = Toolbox.tools.indexOf(this) + 1;
+        const hotkey = this.hotkey ? `(hold ${this.hotkey.replace(" ", "Space")})` : "";
+        return `[${button}] ${name4} ${hotkey}`;
+      }
     };
   }
 });
 
-// tools/pan-tool.ts
-var PanTool, pan_tool;
-var init_pan_tool = __esm({
-  "tools/pan-tool.ts"() {
+// tools/move-tool.ts
+var MoveTool, move_tool;
+var init_move_tool = __esm({
+  "tools/move-tool.ts"() {
     init_tool();
     init_pixel_grid();
-    PanTool = class extends Tool {
+    MoveTool = class extends Tool {
       constructor() {
         super(...arguments);
-        this.name = "pan";
-        this.element = document.getElementById("pan-tool");
+        this.name = "move";
+        this.element = document.getElementById("move-tool");
+        this.hotkey = " ";
       }
       on_drag(button, point, prev_point) {
         if (prev_point) PixelGrid.move_by(prev_point.view().minus(point));
@@ -11627,7 +11666,7 @@ var init_pan_tool = __esm({
         return "grabbing";
       }
     };
-    pan_tool = new PanTool();
+    move_tool = new MoveTool();
   }
 });
 
@@ -11637,6 +11676,7 @@ var init_slider = __esm({
   "slider.ts"() {
     init_colour();
     init_picker();
+    init_tooltip();
     Slider = class {
       constructor(id, space, key) {
         this.space = space;
@@ -11653,15 +11693,20 @@ var init_slider = __esm({
         document.addEventListener("pointermove", (event) => {
           if (dragging) this.on_slide(event, false);
         });
-        document.addEventListener("pointerup", () => dragging = false);
+        document.addEventListener("pointerup", () => {
+          if (dragging) {
+            Tooltip.hide();
+            dragging = false;
+          }
+        });
         document.addEventListener("pointercancel", () => dragging = false);
+        Tooltip.show_on(this.element, () => this.tooltip(), -4);
       }
       set_value(hex, animate = true, move = true) {
-        let value;
         let stops;
         switch (this.space) {
           case "rgb":
-            value = Picker.rgb[this.key];
+            this.value = Picker.rgb[this.key];
             const min_rgb = { ...Picker.rgb, [this.key]: 0 };
             const max_rgb = { ...Picker.rgb, [this.key]: 1 };
             stops = [
@@ -11670,7 +11715,7 @@ var init_slider = __esm({
             ];
             break;
           case "hsl":
-            value = Picker.hsl[this.key];
+            this.value = Picker.hsl[this.key];
             stops = {
               h: [0, 1, 2, 3, 4, 5, 6].map((v) => v / 6),
               s: [0, 1],
@@ -11681,21 +11726,21 @@ var init_slider = __esm({
         this.element.classList.toggle("animate", animate);
         this.element.style.setProperty("--stops", stops.join(","));
         this.knob.style.background = hex;
-        if (move) this.knob.style.setProperty("--value", String(value));
+        if (move) this.knob.style.setProperty("--value", String(this.value));
       }
       on_slide(event, animate = true) {
-        let value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
-        value = Math.min(Math.max(value, 0), 1);
+        this.value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
+        this.value = Math.min(Math.max(this.value, 0), 1);
         let hex;
         switch (this.space) {
           case "rgb":
-            const rgb = { ...Picker.rgb, [this.key]: value };
+            const rgb = { ...Picker.rgb, [this.key]: this.value };
             hex = Colour.rgb_to_hex(rgb);
             Picker.set_hex(hex, animate);
             Picker.rgb = rgb;
             break;
           case "hsl":
-            const hsl = { ...Picker.hsl, [this.key]: value };
+            const hsl = { ...Picker.hsl, [this.key]: this.value };
             hex = Colour.hsl_to_hex(hsl);
             Picker.set_hex(hex, animate);
             Picker.hsl = hsl;
@@ -11704,12 +11749,26 @@ var init_slider = __esm({
         Picker.element.classList.add("animate");
         this.element.classList.toggle("animate", animate);
         this.knob.style.background = hex;
-        this.knob.style.setProperty("--value", String(value));
+        this.knob.style.setProperty("--value", String(this.value));
         Picker.sliders.forEach((slider) => {
           if (this !== slider) {
             slider.set_value(hex, animate, this.space !== slider.space);
           }
         });
+        Tooltip.show(this.element, this.tooltip(), -4);
+      }
+      tooltip() {
+        const name4 = {
+          "r": "Red",
+          "g": "Green",
+          "b": "Blue",
+          "h": "Hue",
+          "s": "Saturation",
+          "l": "Lightness"
+        }[this.key];
+        const value = Math.round(this.value * (this.key === "h" ? 360 : 100));
+        const unit = this.key === "h" ? "\xB0" : "%";
+        return `${name4} = ${value}${unit}`;
       }
     };
   }
@@ -11795,14 +11854,20 @@ var init_pip = __esm({
     init_picker();
     init_palette();
     init_icon();
+    init_tooltip();
     Pip = class extends Icon {
       constructor(hex, button) {
         super();
         this.hex = hex;
         this.button = button;
         this.element = document.createElement("div");
-        this.element.classList.add("pip", `button-${button}`, "animate");
-        this.set_hex(hex);
+      }
+      initialise() {
+        super.initialise();
+        this.element.classList.add("pip", "animate");
+        this.set_button(this.button);
+        this.set_hex(this.hex);
+        Tooltip.show_on(this.element, () => this.tooltip());
       }
       on_click() {
         Picker.set_editing(Picker.pip === this ? null : this);
@@ -11810,7 +11875,13 @@ var init_pip = __esm({
       on_move(index, prev_index) {
         Palette.pips.splice(prev_index, 1);
         Palette.pips.splice(index, 0, this);
+        Palette.update_buttons();
         Palette.save_cookie();
+      }
+      set_button(button) {
+        this.button = button;
+        this.element.classList.remove("button-0", "button-1", "button-2");
+        this.element.classList.add(`button-${button}`);
       }
       set_hex(hex, animate = true) {
         if (hex !== this.hex) {
@@ -11821,6 +11892,15 @@ var init_pip = __esm({
       }
       editing(editing) {
         this.element.classList.toggle("editing", editing);
+      }
+      tooltip() {
+        const hex = this.hex.toUpperCase();
+        const button = [
+          "M1",
+          "M3",
+          "M2"
+        ][this.button];
+        return `[${button}] ${hex}`;
       }
     };
   }
@@ -11899,6 +11979,11 @@ var init_palette = __esm({
         this.save_cookie();
         return pip;
       }
+      static update_buttons() {
+        this.pips.forEach((pip, index) => {
+          pip.set_button(this.button_map[index]);
+        });
+      }
       static save_cookie() {
         Cookies.save("palette", this.pips.map((p) => p.hex));
       }
@@ -11918,6 +12003,7 @@ var init_pick_tool = __esm({
         super(...arguments);
         this.name = "pick";
         this.element = document.getElementById("pick-tool");
+        this.hotkey = "Alt";
       }
       on_drag(button, point, prev_point) {
         if (button !== null) {
@@ -11934,18 +12020,18 @@ var init_pick_tool = __esm({
   }
 });
 
-// tools/pen-tool.ts
-var PenTool, pen_tool;
-var init_pen_tool = __esm({
-  "tools/pen-tool.ts"() {
+// tools/draw-tool.ts
+var DrawTool, draw_tool;
+var init_draw_tool = __esm({
+  "tools/draw-tool.ts"() {
     init_tool();
     init_block();
     init_palette();
-    PenTool = class extends Tool {
+    DrawTool = class extends Tool {
       constructor() {
         super(...arguments);
-        this.name = "pen";
-        this.element = document.getElementById("pen-tool");
+        this.name = "draw";
+        this.element = document.getElementById("draw-tool");
       }
       on_drag(button, point, prev_point = point) {
         const index = Palette.button_map[button];
@@ -11956,7 +12042,7 @@ var init_pen_tool = __esm({
         return true;
       }
     };
-    pen_tool = new PenTool();
+    draw_tool = new DrawTool();
   }
 });
 
@@ -11968,10 +12054,10 @@ __export(toolbox_exports, {
 var Toolbox;
 var init_toolbox = __esm({
   "toolbox.ts"() {
-    init_pan_tool();
+    init_move_tool();
     init_pixel_grid();
     init_pick_tool();
-    init_pen_tool();
+    init_draw_tool();
     init_cookies();
     Toolbox = class {
       static {
@@ -11979,19 +12065,16 @@ var init_toolbox = __esm({
       }
       static {
         this.tools = [
-          pan_tool,
-          pen_tool,
+          move_tool,
+          draw_tool,
           pick_tool
         ];
       }
-      static {
-        this.pan_hotkey = false;
-      }
       static initialise() {
-        const cookie = Cookies.load("tools");
-        if (cookie) {
+        const tools_cookie = Cookies.load("tools");
+        if (tools_cookie) {
           const tools = [];
-          cookie.split(",").forEach((name4) => {
+          tools_cookie.split(",").forEach((name4) => {
             const tool = this.tools.find((t) => t.name === name4);
             if (tool && !tools.includes(tool)) tools.push(tool);
           });
@@ -12005,28 +12088,36 @@ var init_toolbox = __esm({
         this.tools.forEach((tool) => {
           tool.initialise();
         });
-        this.set_active(pan_tool);
+        const tool_cookie = Cookies.load("tool");
+        if (tool_cookie) {
+          const tool = this.tools.find((t) => t.name === tool_cookie);
+          if (tool) this.set_active(tool);
+        }
+        if (!this.active) this.set_active(this.tools[0]);
       }
       static set_active(tool) {
         this.active = tool;
         this.tools.forEach((t) => t.active = t === tool);
         this.update_cursor();
+        this.save_cookie();
       }
-      static active_tool(event) {
-        if (this.pan_hotkey) {
-          return pan_tool;
-        } else if (event.altKey) {
-          return pick_tool;
-        } else {
-          return this.active;
-        }
+      static set_hot(tool) {
+        this.hot = tool;
+        this.tools.forEach((t) => t.hot = t === tool);
+        this.update_cursor();
       }
-      static update_cursor(tool = this.active) {
+      static active_tool() {
+        return this.hot ?? this.active;
+      }
+      static update_cursor(cursor) {
+        const tool = this.hot ?? this.active;
         PixelGrid.canvas.style.setProperty("--cursor", tool.cursor());
         PixelGrid.canvas.style.setProperty("--cursor-down", tool.cursor_down());
+        PixelGrid.update_preview(tool.preview_visible(), cursor);
       }
       static save_cookie() {
         Cookies.save("tools", this.tools.map((p) => p.name));
+        Cookies.save("tool", this.active.name);
       }
     };
   }
@@ -12055,7 +12146,7 @@ function on_touch(event) {
   active_button = event.button;
   const point = Point.view(event.x, event.y);
   document.body.classList.add("dragging");
-  const tool = Toolbox.active_tool(event);
+  const tool = Toolbox.active_tool();
   if (!FEATURE.touch_controls || event.pointerType !== "touch") {
     tool.on_drag(event.button, point);
   }
@@ -12067,7 +12158,7 @@ function on_move(event) {
   pointers[event.pointerId] ??= [];
   pointers[event.pointerId].unshift(point);
   pointers[event.pointerId].splice(2);
-  const tool = Toolbox.active_tool(event);
+  const tool = Toolbox.active_tool();
   if (active_button !== null) {
     if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
@@ -12101,7 +12192,7 @@ function on_leave(event) {
 }
 function on_lift(event) {
   if (active_button !== null) {
-    Toolbox.active_tool(event).on_drag(active_button, last_point);
+    Toolbox.active_tool().on_drag(active_button, last_point);
   }
   delete pointers[event.pointerId];
   if (Object.entries(pointers).length === 0) {
@@ -12120,7 +12211,7 @@ function on_scroll(event) {
     event.deltaY,
     0
   );
-  const tool = Toolbox.active_tool(event);
+  const tool = Toolbox.active_tool();
   if (event.ctrlKey || event.metaKey) {
     PixelGrid.scale_by(event.deltaY, origin);
   } else {
@@ -12134,9 +12225,6 @@ function on_scroll(event) {
 function on_key_down(event) {
   if (event.target === Picker.hex_input) return;
   switch (event.key) {
-    case " ":
-      Toolbox.pan_hotkey = true;
-      break;
     case "1":
     case "2":
     case "3":
@@ -12162,17 +12250,18 @@ function on_key_down(event) {
       }
       break;
   }
-  const tool = Toolbox.active_tool(event);
-  Toolbox.update_cursor(tool);
-  PixelGrid.update_preview(tool.preview_visible());
+  Toolbox.tools.forEach((tool) => {
+    if (tool.hotkey === event.key) {
+      Toolbox.set_hot(tool);
+    }
+  });
+  Toolbox.update_cursor();
 }
 function on_key_up(event) {
-  if (event.key === " ") {
-    Toolbox.pan_hotkey = false;
+  if (event.key === Toolbox.hot?.hotkey) {
+    Toolbox.set_hot(null);
   }
-  const tool = Toolbox.active_tool(event);
-  Toolbox.update_cursor(tool);
-  PixelGrid.update_preview(tool.preview_visible());
+  Toolbox.update_cursor();
 }
 function register_listeners() {
   window.addEventListener("resize", on_resize);
@@ -12235,7 +12324,7 @@ var init_favicon = __esm({
                 ${dot(4, 6)}
                 ${dot(5, 6)}
                 ${dot(6, 5)}
-                ${dot(16, 4)}
+                ${dot(6, 4)}
                 ${dot(5, 3)}
                 ${dot(4, 3)}
                 ${dot(3, 3)}

@@ -110,8 +110,8 @@ body.dragging canvas#pixel-grid {
     position: absolute;
     width: var(--size);
     height: var(--size);
-    border-radius: 50%;
     background: white;
+    border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
     opacity: 0;
     transition-property: --size, opacity;
@@ -122,9 +122,15 @@ body.dragging canvas#pixel-grid {
     opacity: 100%;
 }
 
-.tool.active::before {
+.tool.active::before,
+.tool.hot::before {
     --size: 26px;
     opacity: 100%;
+}
+
+#tools:has(.hot) .tool.active::before {
+    --size: 26px;
+    opacity: 50%;
 }
 
 .tool svg {
@@ -191,7 +197,7 @@ body.dragging canvas#pixel-grid {
     flex-direction: column;
 }
 
-#picker-tools {
+#input-container {
     display: flex;
     flex-direction: row;
 }
@@ -302,4 +308,20 @@ input:focus-visible {
 
 .vr {
     width: 1px;
+}
+
+#tooltip.glass {
+    position: absolute;
+    border-radius: 6px;
+    pointer-events: none;
+    color: white;
+    font-size: 12px;
+    font-family: monospace;
+    background: #3f3f3fdf;
+}
+
+@supports (backdrop-filter: blur()) {
+    #tooltip.glass {
+        background: #3f3f3fbf;
+    }
 }
