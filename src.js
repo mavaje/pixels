@@ -10981,7 +10981,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.3"
+      version: "1.0.4"
     };
     DEBUG = {
       block_borders: false
@@ -12167,7 +12167,6 @@ function on_touch(event) {
   if (!FEATURE.touch_controls || event.pointerType !== "touch") {
     tool.on_drag(event.button, point);
   }
-  last_point = point;
   pointers[event.pointerId] = [point];
 }
 function on_move(event) {
@@ -12192,7 +12191,7 @@ function on_move(event) {
         PixelGrid.scale_by(ratio, centre);
       }
     } else {
-      tool.on_drag(active_button, point, last_point);
+      tool.on_drag(active_button, point, pointers[event.pointerId][1]);
     }
     for (const glass of glasses) {
       const { x, y, width, height } = glass.getBoundingClientRect();
@@ -12207,14 +12206,13 @@ function on_move(event) {
   }
   const preview_visible = event.target === PixelGrid.canvas && event.pointerType !== "touch" && tool.preview_visible();
   PixelGrid.update_preview(preview_visible, point);
-  last_point = point;
 }
 function on_leave(event) {
   PixelGrid.update_preview(false, null);
 }
 function on_lift(event) {
   if (active_button !== null) {
-    Toolbox.active_tool().on_drag(active_button, last_point);
+    Toolbox.active_tool().on_drag(active_button, pointers[event.pointerId]?.[0]);
   }
   delete pointers[event.pointerId];
   if (Object.entries(pointers).length === 0) {
@@ -12302,7 +12300,7 @@ function register_listeners() {
   on_resize();
   on_hash();
 }
-var download_anchor, glasses, active_button, last_point, pointers;
+var download_anchor, glasses, active_button, pointers;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
@@ -12313,7 +12311,6 @@ var init_listeners = __esm({
     download_anchor = document.getElementById("downloader");
     glasses = document.getElementsByClassName("glass");
     active_button = null;
-    last_point = null;
     pointers = {};
   }
 });
