@@ -10981,7 +10981,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.2"
+      version: "1.0.3"
     };
     DEBUG = {
       block_borders: false
@@ -11472,8 +11472,8 @@ var init_pixel_grid = __esm({
       }
       static update_hash() {
         const hash = this.centre.hash_id(this.size() / this.scale);
+        clearTimeout(this.timeout);
         if (hash !== location.hash) {
-          if (this.timeout) clearTimeout(this.timeout);
           this.timeout = setTimeout(() => {
             if (history.pushState) {
               history.pushState(null, null, hash);
@@ -12179,17 +12179,15 @@ function on_move(event) {
   if (active_button !== null) {
     if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
-      const centre = Point.average(valid_pointers.map((p) => p[0]));
-      const last_centre = Point.average(valid_pointers.map((p) => p[1]));
-      console.log(valid_pointers);
-      console.log(centre, last_centre);
+      const points = valid_pointers.map((p) => p[0]);
+      const last_points = valid_pointers.map((p) => p[1]);
+      const centre = Point.average(points);
+      const last_centre = Point.average(last_points);
       const move_by = last_centre.minus(centre).scale(1 / valid_pointers.length).grid();
-      console.log("move by", move_by);
       PixelGrid.move_by(move_by);
       if (valid_pointers.length >= 2) {
-        const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
-        const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
-        console.log("scale by =", pinch, "/", last_pinch, "=", pinch / last_pinch);
+        const pinch = points[0].minus(points[1]).distance();
+        const last_pinch = last_points[0].minus(last_points[1]).distance();
         const ratio = Math.sqrt(pinch / last_pinch);
         PixelGrid.scale_by(ratio, centre);
       }
@@ -12381,7 +12379,7 @@ var require_main = __commonJS({
     var palette_1 = (init_palette(), __toCommonJS(palette_exports));
     var favicon_1 = (init_favicon(), __toCommonJS(favicon_exports));
     var config_1 = (init_config(), __toCommonJS(config_exports));
-    console.log(config_1.CONFIG.version);
+    console.info(`PIXELS - version ${config_1.CONFIG.version}`);
     favicon_1.Favicon.cycle();
     (0, listeners_1.register_listeners)();
     toolbox_1.Toolbox.initialise();

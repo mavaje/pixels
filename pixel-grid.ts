@@ -170,8 +170,8 @@ export class PixelGrid {
     private static timeout: NodeJS.Timeout = null;
     static update_hash() {
         const hash = this.centre.hash_id(this.size() / this.scale);
+        clearTimeout(this.timeout);
         if (hash !== location.hash) {
-            if (this.timeout) clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {
                 if (history.pushState) {
                     history.pushState(null, null, hash);

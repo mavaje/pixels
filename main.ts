@@ -5,7 +5,7 @@ import {Palette} from "./palette";
 import {Favicon} from "./favicon";
 import {CONFIG} from "./config";
 
-console.log(CONFIG.version);
+console.info(`PIXELS - version ${CONFIG.version}`);
 
 Favicon.cycle();
 
