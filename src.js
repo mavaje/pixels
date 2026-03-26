@@ -10971,9 +10971,18 @@ var init_db = __esm({
 });
 
 // config.ts
-var DEBUG, FEATURE;
+var config_exports = {};
+__export(config_exports, {
+  CONFIG: () => CONFIG,
+  DEBUG: () => DEBUG,
+  FEATURE: () => FEATURE
+});
+var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
+    CONFIG = {
+      version: "1.0.0"
+    };
     DEBUG = {
       block_borders: false
     };
@@ -12181,7 +12190,8 @@ function on_move(event) {
         const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
         const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
         console.log("scale by =", pinch, "/", last_pinch, "=", pinch / last_pinch);
-        PixelGrid.scale_by(pinch / last_pinch, centre);
+        const ratio = (pinch / last_pinch) ** (1 / valid_pointers.length);
+        PixelGrid.scale_by(ratio, centre);
       }
     } else {
       tool.on_drag(active_button, point, last_point);
@@ -12370,6 +12380,8 @@ var require_main = __commonJS({
     var picker_1 = (init_picker(), __toCommonJS(picker_exports));
     var palette_1 = (init_palette(), __toCommonJS(palette_exports));
     var favicon_1 = (init_favicon(), __toCommonJS(favicon_exports));
+    var config_1 = (init_config(), __toCommonJS(config_exports));
+    console.log(config_1.CONFIG.version);
     favicon_1.Favicon.cycle();
     (0, listeners_1.register_listeners)();
     toolbox_1.Toolbox.initialise();

@@ -78,7 +78,8 @@ function on_move(event: PointerEvent) {
                 const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
                 const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
                 console.log('scale by =', pinch, '/', last_pinch, '=', pinch / last_pinch);
-                PixelGrid.scale_by(pinch / last_pinch, centre);
+                const ratio = (pinch / last_pinch) ** (1 / valid_pointers.length);
+                PixelGrid.scale_by(ratio, centre);
             }
         } else {
             tool.on_drag(active_button, point, last_point);
