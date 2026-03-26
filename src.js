@@ -12174,10 +12174,13 @@ function on_move(event) {
       const last_centre = Point.average(valid_pointers.map((p) => p[1]));
       console.log(valid_pointers);
       console.log(centre, last_centre);
-      PixelGrid.move_by(last_centre.view().minus(centre).scale(1 / valid_pointers.length));
+      const move_by = last_centre.minus(centre).scale(1 / valid_pointers.length).grid();
+      console.log("move by", move_by);
+      PixelGrid.move_by(move_by);
       if (valid_pointers.length >= 2) {
         const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
         const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
+        console.log("scale by =", pinch, "/", last_pinch, "=", pinch / last_pinch);
         PixelGrid.scale_by(pinch / last_pinch, centre);
       }
     } else {
