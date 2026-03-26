@@ -12164,10 +12164,11 @@ function on_touch(event) {
   const point = Point.view(event.x, event.y);
   document.body.classList.add("dragging");
   const tool = Toolbox.active_tool();
-  if (!FEATURE.touch_controls || event.pointerType !== "touch") {
+  if (event.pointerType !== "touch" && !multi_touched) {
     tool.on_drag(event.button, point);
   }
   pointers[event.pointerId] = [point];
+  multi_touched = Object.entries(pointers).length > 1;
 }
 function on_move(event) {
   const point = Point.view(event.x, event.y);
@@ -12176,7 +12177,7 @@ function on_move(event) {
   pointers[event.pointerId].splice(2);
   const tool = Toolbox.active_tool();
   if (active_button !== null) {
-    if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
+    if (Object.entries(pointers).length > 1) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
       const points = valid_pointers.map((p) => p[0]);
       const last_points = valid_pointers.map((p) => p[1]);
@@ -12211,12 +12212,13 @@ function on_leave(event) {
   PixelGrid.update_preview(false, null);
 }
 function on_lift(event) {
-  if (active_button !== null) {
+  if (active_button !== null && !multi_touched) {
     Toolbox.active_tool().on_drag(active_button, pointers[event.pointerId]?.[0]);
   }
   delete pointers[event.pointerId];
   if (Object.entries(pointers).length === 0) {
     active_button = null;
+    multi_touched = false;
     document.body.classList.remove("dragging");
     for (const glass of glasses) {
       glass.style.opacity = null;
@@ -12238,7 +12240,9 @@ function on_scroll(event) {
     const start = origin.grid();
     PixelGrid.move_by(delta);
     const end = origin.grid();
-    if (active_button) tool.on_drag(active_button, end, start);
+    if (active_button && !multi_touched) {
+      tool.on_drag(active_button, end, start);
+    }
   }
   const preview_visible = event.target === PixelGrid.canvas && tool.preview_visible();
   PixelGrid.update_preview(preview_visible, origin);
@@ -12300,18 +12304,18 @@ function register_listeners() {
   on_resize();
   on_hash();
 }
-var download_anchor, glasses, active_button, pointers;
+var download_anchor, glasses, active_button, pointers, multi_touched;
 var init_listeners = __esm({
   "listeners.ts"() {
     init_pixel_grid();
     init_point();
     init_toolbox();
     init_picker();
-    init_config();
     download_anchor = document.getElementById("downloader");
     glasses = document.getElementsByClassName("glass");
     active_button = null;
     pointers = {};
+    multi_touched = false;
   }
 });
 
