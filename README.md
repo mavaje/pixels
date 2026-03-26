@@ -135,6 +135,7 @@ Just click to draw! You can also assign a different colour to the Left, Right, a
 ### Picker
 
 Essentially the inverse of drawing, it takes the colour of the pixel the cursor is on and assigns it to the respective button.
+You can hold `alt` (or `option`) to pick while holding another tool.
 
 You can also refine the colours by clicking the colour dots.
 
