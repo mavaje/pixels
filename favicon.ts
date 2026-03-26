@@ -16,7 +16,7 @@ export class Favicon {
                 ${dot(2, 0)}
                 ${dot(3, 1)}
                 ${dot(3, 2)}
-                
+                ${(o++, '')}
                 ${dot(3, 4)}
                 ${dot(3, 5)}
                 ${dot(4, 6)}

@@ -1,0 +1,24 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="-0.5 -0.5 8 8"
+    width="16"
+    height="16"
+>
+    <rect x="1" y="0" width="1" height="1" fill="hsl(0,100%,50%)"/>
+    <rect x="2" y="0" width="1" height="1" fill="hsl(20,100%,50%)"/>
+    <rect x="3" y="1" width="1" height="1" fill="hsl(40,100%,50%)"/>
+    <rect x="3" y="2" width="1" height="1" fill="hsl(60,100%,50%)"/>
+    <rect x="3" y="4" width="1" height="1" fill="hsl(100,100%,50%)"/>
+    <rect x="3" y="5" width="1" height="1" fill="hsl(120,100%,50%)"/>
+    <rect x="4" y="6" width="1" height="1" fill="hsl(140,100%,50%)"/>
+    <rect x="5" y="6" width="1" height="1" fill="hsl(160,100%,50%)"/>
+    <rect x="6" y="5" width="1" height="1" fill="hsl(180,100%,50%)"/>
+    <rect x="6" y="4" width="1" height="1" fill="hsl(200,100%,50%)"/>
+    <rect x="5" y="3" width="1" height="1" fill="hsl(220,100%,50%)"/>
+    <rect x="4" y="3" width="1" height="1" fill="hsl(240,100%,50%)"/>
+    <rect x="3" y="3" width="1" height="1" fill="hsl(260,100%,50%)"/>
+    <rect x="2" y="3" width="1" height="1" fill="hsl(280,100%,50%)"/>
+    <rect x="1" y="3" width="1" height="1" fill="hsl(300,100%,50%)"/>
+    <rect x="0" y="2" width="1" height="1" fill="hsl(320,100%,50%)"/>
+    <rect x="0" y="1" width="1" height="1" fill="hsl(340,100%,50%)"/>
+</svg>
