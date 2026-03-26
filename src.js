@@ -11449,8 +11449,11 @@ var init_pixel_grid = __esm({
         this.render();
         this.update_hash();
       }
-      static scale_by(delta, origin) {
-        this.set_scale(this.scale * 1.01 ** -delta, origin);
+      static zoom_by(delta, origin) {
+        this.scale_by(1.01 ** -delta, origin);
+      }
+      static scale_by(ratio, origin) {
+        this.set_scale(this.scale * ratio, origin);
       }
       static set_size(size) {
         this.set_scale(this.size() / size);
@@ -12171,7 +12174,7 @@ function on_move(event) {
       const last_centre = Point.average(valid_pointers.map((p) => p[1]));
       console.log(valid_pointers);
       console.log(centre, last_centre);
-      PixelGrid.move_by(last_centre.view().minus(centre));
+      PixelGrid.move_by(last_centre.view().minus(centre).scale(1 / valid_pointers.length));
       if (valid_pointers.length >= 2) {
         const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
         const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
@@ -12221,7 +12224,7 @@ function on_scroll(event) {
   );
   const tool = Toolbox.active_tool();
   if (event.ctrlKey || event.metaKey) {
-    PixelGrid.scale_by(event.deltaY, origin);
+    PixelGrid.zoom_by(event.deltaY, origin);
   } else {
     const start = origin.grid();
     PixelGrid.move_by(delta);

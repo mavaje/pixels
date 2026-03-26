@@ -155,8 +155,12 @@ export class PixelGrid {
         this.update_hash();
     }
 
-    static scale_by(delta: number, origin?: Point) {
-        this.set_scale(this.scale * 1.01 ** -delta, origin);
+    static zoom_by(delta: number, origin?: Point) {
+        this.scale_by(1.01 ** -delta, origin);
+    }
+
+    static scale_by(ratio: number, origin?: Point) {
+        this.set_scale(this.scale * ratio, origin);
     }
 
     static set_size(size: number) {

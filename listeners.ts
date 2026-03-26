@@ -70,7 +70,7 @@ function on_move(event: PointerEvent) {
             console.log(valid_pointers);
             console.log(centre, last_centre);
 
-            PixelGrid.move_by(last_centre.view().minus(centre));
+            PixelGrid.move_by(last_centre.view().minus(centre).scale(1 / valid_pointers.length));
 
             if (valid_pointers.length >= 2) {
                 const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
@@ -135,7 +135,7 @@ function on_scroll(event: WheelEvent) {
     const tool = Toolbox.active_tool();
 
     if (event.ctrlKey || event.metaKey) {
-        PixelGrid.scale_by(event.deltaY, origin);
+        PixelGrid.zoom_by(event.deltaY, origin);
     } else {
         const start = origin.grid();
         PixelGrid.move_by(delta);
