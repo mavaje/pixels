@@ -27,7 +27,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/mavaje/pixels">
-    <img src="images/icon.svg" alt="Logo" width="80" height="80">
+    <img src="icon.svg" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">PIXELS</h3>
