@@ -10978,7 +10978,7 @@ var init_config = __esm({
       block_borders: false
     };
     FEATURE = {
-      touch_controls: false
+      touch_controls: true
     };
   }
 });
@@ -12169,6 +12169,8 @@ function on_move(event) {
       const valid_pointers = Object.values(pointers).filter((p) => p.length >= 2);
       const centre = Point.average(valid_pointers.map((p) => p[0]));
       const last_centre = Point.average(valid_pointers.map((p) => p[1]));
+      console.log(valid_pointers);
+      console.log(centre, last_centre);
       PixelGrid.move_by(last_centre.view().minus(centre));
       if (valid_pointers.length >= 2) {
         const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
@@ -12180,7 +12182,7 @@ function on_move(event) {
     }
     for (const glass of glasses) {
       const { x, y, width, height } = glass.getBoundingClientRect();
-      if (Object.values(pointers).every(
+      if (Object.values(pointers).some(
         ([point2]) => point2.x > x - 16 && point2.x < x + width + 16 && point2.y > y - 16 && point2.y < y + height + 16
       )) {
         glass.style.opacity = "0%";
@@ -12189,7 +12191,8 @@ function on_move(event) {
       }
     }
   }
-  PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), point);
+  const preview_visible = event.target === PixelGrid.canvas && event.pointerType !== "touch" && tool.preview_visible();
+  PixelGrid.update_preview(preview_visible, point);
   last_point = point;
 }
 function on_leave(event) {
@@ -12225,7 +12228,8 @@ function on_scroll(event) {
     const end = origin.grid();
     if (active_button) tool.on_drag(active_button, end, start);
   }
-  PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), origin);
+  const preview_visible = event.target === PixelGrid.canvas && tool.preview_visible();
+  PixelGrid.update_preview(preview_visible, origin);
 }
 function on_key_down(event) {
   if (event.target === Picker.hex_input) return;

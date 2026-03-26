@@ -63,9 +63,15 @@ function on_move(event: PointerEvent) {
     if (active_button !== null) {
         if (Object.entries(pointers).length > 1 && FEATURE.touch_controls) {
             const valid_pointers = Object.values(pointers).filter(p => p.length >= 2);
+
             const centre = Point.average(valid_pointers.map(p => p[0]));
             const last_centre = Point.average(valid_pointers.map(p => p[1]));
+
+            console.log(valid_pointers);
+            console.log(centre, last_centre);
+
             PixelGrid.move_by(last_centre.view().minus(centre));
+
             if (valid_pointers.length >= 2) {
                 const pinch = valid_pointers[0][0].minus(valid_pointers[1][0]).distance();
                 const last_pinch = valid_pointers[0][1].minus(valid_pointers[1][1]).distance();
@@ -77,7 +83,7 @@ function on_move(event: PointerEvent) {
 
         for (const glass of glasses) {
             const {x, y, width, height} = glass.getBoundingClientRect();
-            if (Object.values(pointers).every(([point]) =>
+            if (Object.values(pointers).some(([point]) =>
                 point.x > x - 16 && point.x < x + width + 16 &&
                 point.y > y - 16 && point.y < y + height + 16
             )) {
@@ -88,7 +94,10 @@ function on_move(event: PointerEvent) {
         }
     }
 
-    PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), point);
+    const preview_visible = event.target === PixelGrid.canvas
+        && event.pointerType !== 'touch'
+        && tool.preview_visible();
+    PixelGrid.update_preview(preview_visible, point);
 
     last_point = point;
 }
@@ -134,7 +143,9 @@ function on_scroll(event: WheelEvent) {
         if (active_button) tool.on_drag(active_button, end, start);
     }
 
-    PixelGrid.update_preview(event.target === PixelGrid.canvas && tool.preview_visible(), origin);
+    const preview_visible = event.target === PixelGrid.canvas
+        && tool.preview_visible();
+    PixelGrid.update_preview(preview_visible, origin);
 }
 
 function on_key_down(event: KeyboardEvent) {
