@@ -27,7 +27,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/mavaje/pixels">
-    <img src="images/icon.svg" alt="Logo" width="80" height="80">
+    <img src="icon.svg" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">PIXELS</h3>
@@ -135,6 +135,7 @@ Just click to draw! You can also assign a different colour to the Left, Right, a
 ### Picker
 
 Essentially the inverse of drawing, it takes the colour of the pixel the cursor is on and assigns it to the respective button.
+You can hold `alt` (or `option`) to pick while holding another tool.
 
 You can also refine the colours by clicking the colour dots.
 
