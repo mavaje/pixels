@@ -10970,227 +10970,6 @@ var init_db = __esm({
   }
 });
 
-// config.ts
-var config_exports = {};
-__export(config_exports, {
-  CONFIG: () => CONFIG,
-  DEBUG: () => DEBUG,
-  FEATURE: () => FEATURE
-});
-var CONFIG, DEBUG, FEATURE;
-var init_config = __esm({
-  "config.ts"() {
-    CONFIG = {
-      version: "1.0.5"
-    };
-    DEBUG = {
-      block_borders: false
-    };
-    FEATURE = {
-      touch_controls: true
-    };
-  }
-});
-
-// colour.ts
-var Colour;
-var init_colour = __esm({
-  "colour.ts"() {
-    Colour = class _Colour {
-      static clean_hex(hex, hash = false) {
-        if (hash) return "#" + this.clean_hex(hex, false);
-        hex = hex.replace(/[^\da-f]/gi, "");
-        switch (hex.length) {
-          case 0:
-            return "000000";
-          case 1:
-            return hex.repeat(6);
-          case 2:
-            return hex.repeat(3);
-          case 3:
-            const [r, g, b] = hex;
-            return r + r + g + g + b + b;
-          default:
-            return hex.padEnd(6, "0").slice(0, 6);
-        }
-      }
-      static hex_to_rgb(hex) {
-        hex = this.clean_hex(hex);
-        const [r, g, b] = [0, 2, 4].map((i) => hex.slice(i, i + 2)).map((x) => (Number.parseInt(x, 16) || 0) / 255);
-        return { r, g, b };
-      }
-      static rgb_to_hex({ r, g, b }, bytes = false) {
-        return "#" + [r, g, b].map((v) => Math.max(0, Math.min(Math.floor(v * (bytes ? 1 : 256)), 255))).map((b2) => b2.toString(16).padStart(2, "0")).join("");
-      }
-      static rgb_to_hsl({ r, g, b }) {
-        const min = Math.min(r, g, b);
-        const max = Math.max(r, g, b);
-        const range = max - min;
-        const l = (min + max) / 2;
-        const scale = 1 - Math.abs(2 * l - 1);
-        const s = scale > 0 ? range / scale : 0;
-        const h = range > 0 ? {
-          [r]: (g - b) / (6 * range) + 1,
-          [g]: (b - r) / (6 * range) + 1 / 3,
-          [b]: (r - g) / (6 * range) + 2 / 3
-        }[max] % 1 : 0;
-        return { h, s, l };
-      }
-      static hsl_to_rgb({ h, s, l }) {
-        const c = s * (1 - Math.abs(2 * l - 1));
-        const x = c * (1 - Math.abs(6 * h % 2 - 1));
-        const min = l - c / 2;
-        const mid = min + x;
-        const max = min + c;
-        return [
-          { r: max, g: mid, b: min },
-          { r: mid, g: max, b: min },
-          { r: min, g: max, b: mid },
-          { r: min, g: mid, b: max },
-          { r: mid, g: min, b: max },
-          { r: max, g: min, b: mid }
-        ][Math.floor(h % 1 * 6)];
-      }
-      static hex_to_hsl(hex) {
-        return _Colour.rgb_to_hsl(_Colour.hex_to_rgb(hex));
-      }
-      static hsl_to_hex(hsl) {
-        return _Colour.rgb_to_hex(_Colour.hsl_to_rgb(hsl));
-      }
-    };
-  }
-});
-
-// db/block.ts
-var Block;
-var init_block = __esm({
-  "db/block.ts"() {
-    init_index_esm5();
-    init_db();
-    init_pixel_grid();
-    init_config();
-    init_colour();
-    Block = class _Block {
-      constructor(point) {
-        this.point = point;
-        this.canvas = new OffscreenCanvas(_Block.SIZE, _Block.SIZE);
-        this.context = this.canvas.getContext("2d", { willReadFrequently: true });
-        const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), (snapshot) => {
-          const pixels = snapshot.val();
-          if (!pixels || !(typeof pixels === "object")) return;
-          this.clear();
-          Object.entries(pixels).forEach(([id, hex]) => {
-            if (_Block.PIXEL_ID_FORMAT.test(id) && _Block.PIXEL_VALUE_FORMAT.test(hex)) {
-              const x = Number.parseInt(id.slice(0, 2), 16);
-              const y = Number.parseInt(id.slice(2, 4), 16);
-              this.set_pixel([x, y], hex);
-            }
-          });
-          this.render();
-        });
-        _Block.blocks[this.point.block_id()] = this;
-        this.unsubscribe = () => {
-          unsubscribe_db_listener();
-          delete _Block.blocks[this.point.block_id()];
-          this.debug_element?.remove();
-        };
-        if (DEBUG.block_borders) {
-          this.debug_element = document.createElement("div");
-          this.debug_element.id = `block:${this.point.block_id()}`;
-          this.debug_element.classList.add("block");
-          const label = document.createElement("div");
-          label.classList.add("label");
-          label.innerText = this.point.block_id();
-          this.debug_element.append(label);
-        }
-      }
-      static {
-        this.BACKGROUND = "#ffffff";
-      }
-      static {
-        this.SIZE = 256;
-      }
-      static {
-        this.PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
-      }
-      static {
-        this.PIXEL_VALUE_FORMAT = /^([0-9a-f]{3}|[0-9a-f]{6})$/;
-      }
-      static {
-        this.blocks = {};
-      }
-      static async draw_line(p1, p2, hex) {
-        const blocks = {};
-        p1 = p1.grid().floor();
-        p2 = p2.grid().floor();
-        hex = hex.replace(/[^0-9a-f]/gi, "");
-        const delta = p2.minus(p1);
-        const dx = Math.abs(delta.x);
-        const dy = Math.abs(delta.y);
-        const sx = Math.sign(delta.x);
-        const sy = Math.sign(delta.y);
-        let p = p1;
-        let error2 = dx - dy;
-        while (true) {
-          const block_id = p.block_id();
-          const pixel_id = p.pixel_id();
-          blocks[block_id] ??= {};
-          blocks[block_id][pixel_id] = hex;
-          const [px, py] = p.pixel().xy();
-          _Block.blocks[block_id]?.set_pixel([px, py], hex);
-          if (p.equals(p2)) break;
-          const e2 = error2 * 2;
-          if (e2 > -dy) {
-            error2 -= dy;
-            p = p.plus(sx, 0);
-          }
-          if (e2 < dx) {
-            error2 += dx;
-            p = p.plus(0, sy);
-          }
-        }
-        for (const [block_id, pixels] of Object.entries(blocks)) {
-          _Block.blocks[block_id]?.render();
-          await update(ref(db, `pixels/${block_id}`), pixels);
-        }
-      }
-      static pixel_at(point) {
-        point = point.grid();
-        const block = _Block.blocks[point.block_id()];
-        if (block) {
-          return block.get_pixel(point.pixel().xy());
-        } else {
-          return _Block.BACKGROUND;
-        }
-      }
-      clear() {
-        this.context.fillStyle = _Block.BACKGROUND;
-        this.context.fillRect(0, 0, _Block.SIZE, _Block.SIZE);
-      }
-      set_pixel([x, y], hex) {
-        this.context.fillStyle = `#${hex}`;
-        this.context.fillRect(x, y, 1, 1);
-      }
-      get_pixel([x, y]) {
-        const { data } = this.context.getImageData(x, y, 1, 1);
-        const [r, g, b] = data;
-        return Colour.rgb_to_hex({ r, g, b }, true);
-      }
-      render() {
-        const buffer = _Block.SIZE;
-        if (this.point.x + _Block.SIZE > PixelGrid.left() && this.point.x < PixelGrid.right() && this.point.y + _Block.SIZE > PixelGrid.top() && this.point.y < PixelGrid.bottom()) {
-          PixelGrid.render_block(this);
-        } else {
-          this.debug_element?.remove();
-          if (this.point.x + _Block.SIZE + buffer < PixelGrid.left() || this.point.x - buffer > PixelGrid.right() || this.point.y + _Block.SIZE + buffer < PixelGrid.top() || this.point.y - buffer > PixelGrid.bottom()) {
-            this.unsubscribe();
-          }
-        }
-      }
-    };
-  }
-});
-
 // point.ts
 var Point;
 var init_point = __esm({
@@ -11314,6 +11093,229 @@ var init_point = __esm({
           this.w - w,
           this.context
         );
+      }
+    };
+  }
+});
+
+// config.ts
+var config_exports = {};
+__export(config_exports, {
+  CONFIG: () => CONFIG,
+  DEBUG: () => DEBUG,
+  FEATURE: () => FEATURE
+});
+var CONFIG, DEBUG, FEATURE;
+var init_config = __esm({
+  "config.ts"() {
+    CONFIG = {
+      version: "1.0.5"
+    };
+    DEBUG = {
+      block_borders: false
+    };
+    FEATURE = {
+      touch_controls: true
+    };
+  }
+});
+
+// colour.ts
+var Colour;
+var init_colour = __esm({
+  "colour.ts"() {
+    Colour = class _Colour {
+      static clean_hex(hex, hash = false) {
+        if (hash) return "#" + this.clean_hex(hex, false);
+        hex = hex.replace(/[^\da-f]/gi, "");
+        switch (hex.length) {
+          case 0:
+            return "000000";
+          case 1:
+            return hex.repeat(6);
+          case 2:
+            return hex.repeat(3);
+          case 3:
+            const [r, g, b] = hex;
+            return r + r + g + g + b + b;
+          default:
+            return hex.padEnd(6, "0").slice(0, 6);
+        }
+      }
+      static hex_to_rgb(hex) {
+        hex = this.clean_hex(hex);
+        const [r, g, b] = [0, 2, 4].map((i) => hex.slice(i, i + 2)).map((x) => (Number.parseInt(x, 16) || 0) / 255);
+        return { r, g, b };
+      }
+      static rgb_to_hex({ r, g, b }, bytes = false) {
+        return "#" + [r, g, b].map((v) => Math.max(0, Math.min(Math.floor(v * (bytes ? 1 : 256)), 255))).map((b2) => b2.toString(16).padStart(2, "0")).join("");
+      }
+      static rgb_to_hsl({ r, g, b }) {
+        const min = Math.min(r, g, b);
+        const max = Math.max(r, g, b);
+        const range = max - min;
+        const l = (min + max) / 2;
+        const scale = 1 - Math.abs(2 * l - 1);
+        const s = scale > 0 ? range / scale : 0;
+        const h = range > 0 ? {
+          [r]: (g - b) / (6 * range) + 1,
+          [g]: (b - r) / (6 * range) + 1 / 3,
+          [b]: (r - g) / (6 * range) + 2 / 3
+        }[max] % 1 : 0;
+        return { h, s, l };
+      }
+      static hsl_to_rgb({ h, s, l }) {
+        const c = s * (1 - Math.abs(2 * l - 1));
+        const x = c * (1 - Math.abs(6 * h % 2 - 1));
+        const min = l - c / 2;
+        const mid = min + x;
+        const max = min + c;
+        return [
+          { r: max, g: mid, b: min },
+          { r: mid, g: max, b: min },
+          { r: min, g: max, b: mid },
+          { r: min, g: mid, b: max },
+          { r: mid, g: min, b: max },
+          { r: max, g: min, b: mid }
+        ][Math.floor(h % 1 * 6)];
+      }
+      static hex_to_hsl(hex) {
+        return _Colour.rgb_to_hsl(_Colour.hex_to_rgb(hex));
+      }
+      static hsl_to_hex(hsl) {
+        return _Colour.rgb_to_hex(_Colour.hsl_to_rgb(hsl));
+      }
+    };
+  }
+});
+
+// db/block.ts
+var Block;
+var init_block = __esm({
+  "db/block.ts"() {
+    init_index_esm5();
+    init_db();
+    init_pixel_grid();
+    init_point();
+    init_config();
+    init_colour();
+    Block = class _Block {
+      constructor(point) {
+        this.point = point;
+        this.canvas = new OffscreenCanvas(_Block.SIZE, _Block.SIZE);
+        this.context = this.canvas.getContext("2d", { willReadFrequently: true });
+        const unsubscribe_db_listener = onValue(ref(db, `pixels/${this.point.block_id()}`), (snapshot) => {
+          const pixels = snapshot.val();
+          if (!pixels || !(typeof pixels === "object")) return;
+          this.clear();
+          Object.entries(pixels).forEach(([id, hex]) => {
+            if (_Block.PIXEL_ID_FORMAT.test(id) && _Block.PIXEL_VALUE_FORMAT.test(hex)) {
+              const x = Number.parseInt(id.slice(0, 2), 16);
+              const y = Number.parseInt(id.slice(2, 4), 16);
+              const pixel = Point.grid(x, y);
+              this.set_pixel(this.point.plus(pixel), hex);
+            }
+          });
+          this.render();
+        });
+        _Block.blocks[this.point.block_id()] = this;
+        this.unsubscribe = () => {
+          unsubscribe_db_listener();
+          delete _Block.blocks[this.point.block_id()];
+          this.debug_element?.remove();
+        };
+        if (DEBUG.block_borders) {
+          this.debug_element = document.createElement("div");
+          this.debug_element.id = `block:${this.point.block_id()}`;
+          this.debug_element.classList.add("block");
+          const label = document.createElement("div");
+          label.classList.add("label");
+          label.innerText = this.point.block_id();
+          this.debug_element.append(label);
+        }
+      }
+      static {
+        this.BACKGROUND = "#ffffff";
+      }
+      static {
+        this.SIZE = 256;
+      }
+      static {
+        this.PIXEL_ID_FORMAT = /^[0-9a-f]{4}$/;
+      }
+      static {
+        this.PIXEL_VALUE_FORMAT = /^([0-9a-f]{3}|[0-9a-f]{6})$/;
+      }
+      static {
+        this.blocks = {};
+      }
+      static async draw_line(p1, p2, hex) {
+        const blocks = {};
+        p1 = p1.grid().floor();
+        p2 = p2.grid().floor();
+        hex = hex.replace(/[^0-9a-f]/gi, "");
+        const delta = p2.minus(p1);
+        const dx = Math.abs(delta.x);
+        const dy = Math.abs(delta.y);
+        const sx = Math.sign(delta.x);
+        const sy = Math.sign(delta.y);
+        let p = p1;
+        let error2 = dx - dy;
+        while (true) {
+          const block_id = p.block_id();
+          const pixel_id = p.pixel_id();
+          blocks[block_id] ??= {};
+          blocks[block_id][pixel_id] = hex;
+          _Block.blocks[block_id]?.set_pixel(p, hex);
+          if (p.equals(p2)) break;
+          const e2 = error2 * 2;
+          if (e2 > -dy) {
+            error2 -= dy;
+            p = p.plus(sx, 0);
+          }
+          if (e2 < dx) {
+            error2 += dx;
+            p = p.plus(0, sy);
+          }
+        }
+        for (const [block_id, pixels] of Object.entries(blocks)) {
+          _Block.blocks[block_id]?.render();
+          await update(ref(db, `pixels/${block_id}`), pixels);
+        }
+      }
+      static pixel_at(point) {
+        const block = _Block.blocks[point.block_id()];
+        if (block) {
+          return block.get_pixel(point);
+        } else {
+          return _Block.BACKGROUND;
+        }
+      }
+      clear() {
+        this.context.fillStyle = _Block.BACKGROUND;
+        this.context.fillRect(0, 0, _Block.SIZE, _Block.SIZE);
+      }
+      set_pixel(point, hex) {
+        const [x, y] = point.pixel().xy();
+        this.context.fillStyle = `#${hex}`;
+        this.context.fillRect(x, y, 1, 1);
+      }
+      get_pixel(point) {
+        const [x, y] = point.pixel().xy();
+        const { data } = this.context.getImageData(x, y, 1, 1);
+        const [r, g, b] = data;
+        return Colour.rgb_to_hex({ r, g, b }, true);
+      }
+      render() {
+        const buffer = _Block.SIZE;
+        if (this.point.x + _Block.SIZE > PixelGrid.left() && this.point.x < PixelGrid.right() && this.point.y + _Block.SIZE > PixelGrid.top() && this.point.y < PixelGrid.bottom()) {
+          PixelGrid.render_block(this);
+        } else {
+          this.debug_element?.remove();
+          if (this.point.x + _Block.SIZE + buffer < PixelGrid.left() || this.point.x - buffer > PixelGrid.right() || this.point.y + _Block.SIZE + buffer < PixelGrid.top() || this.point.y - buffer > PixelGrid.bottom()) {
+            this.unsubscribe();
+          }
+        }
       }
     };
   }
@@ -12343,7 +12345,7 @@ var init_favicon = __esm({
                 ${dot(2, 0)}
                 ${dot(3, 1)}
                 ${dot(3, 2)}
-                
+                ${o++, ""}
                 ${dot(3, 4)}
                 ${dot(3, 5)}
                 ${dot(4, 6)}

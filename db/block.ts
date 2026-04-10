@@ -38,7 +38,8 @@ export class Block {
                 if (Block.PIXEL_ID_FORMAT.test(id) && Block.PIXEL_VALUE_FORMAT.test(hex)) {
                     const x = Number.parseInt(id.slice(0, 2), 16);
                     const y = Number.parseInt(id.slice(2, 4), 16);
-                    this.set_pixel([x, y], hex);
+                    const pixel = Point.grid(x, y);
+                    this.set_pixel(this.point.plus(pixel), hex);
                 }
             });
 
@@ -94,9 +95,7 @@ export class Block {
             blocks[block_id] ??= {};
             blocks[block_id][pixel_id] = hex;
 
-            const [px, py] = p.pixel().xy();
-            Block.blocks[block_id]?.set_pixel([px, py], hex);
-
+            Block.blocks[block_id]?.set_pixel(p, hex);
 
             if (p.equals(p2)) break;
             const e2 = error * 2;
@@ -116,12 +115,10 @@ export class Block {
         }
     }
 
-    static pixel_at(point: Point) {
-        point = point.grid();
-
+    static pixel_at(point: Point): string {
         const block = Block.blocks[point.block_id()];
         if (block) {
-            return block.get_pixel(point.pixel().xy());
+            return block.get_pixel(point);
         } else {
             return Block.BACKGROUND;
         }
@@ -133,16 +130,16 @@ export class Block {
     }
 
     set_pixel(
-        [x, y]: [number, number],
+        point: Point,
         hex: string,
     ) {
+        const [x, y] = point.pixel().xy();
         this.context.fillStyle = `#${hex}`;
         this.context.fillRect(x, y, 1, 1);
     }
 
-    get_pixel(
-        [x, y]: [number, number],
-    ): string {
+    get_pixel(point: Point): string {
+        const [x, y] = point.pixel().xy();
         const {data} = this.context.getImageData(x, y, 1, 1);
         const [r, g, b] = data;
         return Colour.rgb_to_hex({r, g, b}, true);
