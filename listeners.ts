@@ -47,6 +47,11 @@ function on_touch(event: PointerEvent) {
 
     pointers[event.pointerId] = [point];
     multi_touched = Object.entries(pointers).length > 1;
+
+    const preview_visible = event.target === PixelGrid.canvas
+        && !multi_touched
+        && tool.preview_visible();
+    PixelGrid.update_preview(preview_visible, point);
 }
 
 function on_move(event: PointerEvent) {
@@ -59,7 +64,7 @@ function on_move(event: PointerEvent) {
     const tool = Toolbox.active_tool();
 
     if (active_button !== null) {
-        if (Object.entries(pointers).length > 1) {
+        if (multi_touched) {
             const valid_pointers = Object.values(pointers).filter(p => p.length >= 2);
 
             const points = valid_pointers.map(p => p[0]);
@@ -96,7 +101,7 @@ function on_move(event: PointerEvent) {
     }
 
     const preview_visible = event.target === PixelGrid.canvas
-        && event.pointerType !== 'touch'
+        && !multi_touched
         && tool.preview_visible();
     PixelGrid.update_preview(preview_visible, point);
 }
@@ -116,10 +121,16 @@ function on_lift(event: PointerEvent) {
         multi_touched = false;
         document.body.classList.remove('dragging');
 
+        if (event.pointerType === 'touch') {
+            PixelGrid.update_preview(false, null);
+        }
+
         for (const glass of glasses) {
             glass.style.opacity = null;
         }
     }
+
+    PixelGrid.update_preview(false, null);
 }
 
 function on_scroll(event: WheelEvent) {
@@ -140,7 +151,7 @@ function on_scroll(event: WheelEvent) {
         const start = origin.grid();
         PixelGrid.move_by(delta);
         const end = origin.grid();
-        if (active_button && !multi_touched) {
+        if (active_button !== null && !multi_touched) {
             tool.on_drag(active_button, end, start);
         }
     }
