@@ -77,6 +77,7 @@ export class Block {
         p2 = p2.grid().floor();
 
         hex = hex.replace(/[^0-9a-f]/gi, '');
+        const db_hex = /[^f]/gi.test(hex) ? hex : null;
 
         const delta = p2.minus(p1);
 
@@ -93,7 +94,7 @@ export class Block {
             const pixel_id = p.pixel_id();
 
             blocks[block_id] ??= {};
-            blocks[block_id][pixel_id] = hex;
+            blocks[block_id][pixel_id] = db_hex;
 
             Block.blocks[block_id]?.set_pixel(p, hex);
 

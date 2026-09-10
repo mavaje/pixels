@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.5"
+      version: "1.0.6"
     };
     DEBUG = {
       block_borders: false
@@ -11254,6 +11254,7 @@ var init_block = __esm({
         p1 = p1.grid().floor();
         p2 = p2.grid().floor();
         hex = hex.replace(/[^0-9a-f]/gi, "");
+        const db_hex = /[^f]/gi.test(hex) ? hex : null;
         const delta = p2.minus(p1);
         const dx = Math.abs(delta.x);
         const dy = Math.abs(delta.y);
@@ -11265,7 +11266,7 @@ var init_block = __esm({
           const block_id = p.block_id();
           const pixel_id = p.pixel_id();
           blocks[block_id] ??= {};
-          blocks[block_id][pixel_id] = hex;
+          blocks[block_id][pixel_id] = db_hex;
           _Block.blocks[block_id]?.set_pixel(p, hex);
           if (p.equals(p2)) break;
           const e2 = error2 * 2;
@@ -12151,7 +12152,7 @@ function on_resize(event) {
   PixelGrid.resize();
 }
 function on_hash(event) {
-  const [x, y, z] = location.hash.slice(1).split(",").map((d, i) => i < 2 ? Number.parseInt(d) : Number.parseFloat(d));
+  const [x, y, z] = location.hash.slice(1).split(",").map(Number.parseFloat);
   if (![x, y].some(isNaN)) {
     PixelGrid.centre = Point.grid(x, y);
     if (!isNaN(z)) {
@@ -12257,6 +12258,7 @@ function on_scroll(event) {
 }
 function on_key_down(event) {
   if (event.target === Picker.hex_input) return;
+  const bump = event.shiftKey ? 256 : 32;
   switch (event.key) {
     case "1":
     case "2":
@@ -12264,16 +12266,16 @@ function on_key_down(event) {
       Toolbox.set_active(Toolbox.tools[Number.parseInt(event.key) - 1]);
       break;
     case "ArrowLeft":
-      PixelGrid.move_by(Point.view(-16, 0, 0));
+      PixelGrid.move_by(Point.view(-bump, 0, 0));
       break;
     case "ArrowRight":
-      PixelGrid.move_by(Point.view(16, 0, 0));
+      PixelGrid.move_by(Point.view(bump, 0, 0));
       break;
     case "ArrowUp":
-      PixelGrid.move_by(Point.view(0, -16, 0));
+      PixelGrid.move_by(Point.view(0, -bump, 0));
       break;
     case "ArrowDown":
-      PixelGrid.move_by(Point.view(0, 16, 0));
+      PixelGrid.move_by(Point.view(0, bump, 0));
       break;
     case "s":
       if (event.ctrlKey || event.metaKey) {

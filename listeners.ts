@@ -15,9 +15,7 @@ function on_hash(event?: HashChangeEvent) {
     const [x, y, z] = location.hash
         .slice(1)
         .split(',')
-        .map((d, i) => i < 2
-            ? Number.parseInt(d)
-            : Number.parseFloat(d));
+        .map(Number.parseFloat);
     if (![x, y].some(isNaN)) {
         PixelGrid.centre = Point.grid(x, y);
         if (!isNaN(z)) {
@@ -164,6 +162,8 @@ function on_scroll(event: WheelEvent) {
 function on_key_down(event: KeyboardEvent) {
     if (event.target === Picker.hex_input) return;
 
+    const bump = event.shiftKey ? 256 : 32;
+
     switch (event.key) {
         case '1':
         case '2':
@@ -172,16 +172,16 @@ function on_key_down(event: KeyboardEvent) {
             break;
 
         case 'ArrowLeft':
-            PixelGrid.move_by(Point.view(-16, 0, 0));
+            PixelGrid.move_by(Point.view(-bump, 0, 0));
             break;
         case 'ArrowRight':
-            PixelGrid.move_by(Point.view(16, 0, 0));
+            PixelGrid.move_by(Point.view(bump, 0, 0));
             break;
         case 'ArrowUp':
-            PixelGrid.move_by(Point.view(0, -16, 0));
+            PixelGrid.move_by(Point.view(0, -bump, 0));
             break;
         case 'ArrowDown':
-            PixelGrid.move_by(Point.view(0, 16, 0));
+            PixelGrid.move_by(Point.view(0, bump, 0));
             break;
 
         case 's':
