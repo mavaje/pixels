@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.6"
+      version: "1.0.7"
     };
     DEBUG = {
       block_borders: false
@@ -11452,7 +11452,7 @@ var init_pixel_grid = __esm({
         this.move_to(this.centre.plus(delta));
       }
       static set_scale(scale, origin) {
-        scale = Math.max(scale, 1);
+        scale = Math.max(scale, 1 / window.devicePixelRatio);
         scale = Math.min(scale, this.size() / 8);
         if (origin) {
           this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);

@@ -1,0 +1,14 @@
+{
+  "name": "Pixels",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "games"],
+  "display": "standalone",
+  "start_url": "/pixels",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

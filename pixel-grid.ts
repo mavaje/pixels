@@ -141,7 +141,7 @@ export class PixelGrid {
     }
 
     static set_scale(scale: number, origin?: Point) {
-        scale = Math.max(scale, 1);
+        scale = Math.max(scale, 1 / window.devicePixelRatio);
         scale = Math.min(scale, this.size() / 8);
 
         if (origin) {
