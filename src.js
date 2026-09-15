@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.7"
+      version: "1.0.9"
     };
     DEBUG = {
       block_borders: false
@@ -11433,16 +11433,16 @@ var init_zoom_slider = __esm({
     ZoomSlider = class extends Slider {
       on_slide(event, animate = true) {
         super.on_slide(event, animate);
-        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
-        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
+        const min_value = Math.log(PixelGrid.min_scale());
+        const max_value = Math.log(PixelGrid.max_scale());
         let zoom = this.value * min_value + (1 - this.value) * max_value;
-        const scale = 1.01 ** zoom;
+        const scale = Math.exp(zoom);
         PixelGrid.set_scale(scale);
       }
       sync_value() {
-        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
-        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
-        const zoom = Math.log(PixelGrid.scale) / Math.log(1.01);
+        const min_value = Math.log(PixelGrid.min_scale());
+        const max_value = Math.log(PixelGrid.max_scale());
+        const zoom = Math.log(PixelGrid.scale);
         const value = (max_value - zoom) / (max_value - min_value);
         this.update_value(value, true);
       }
@@ -11618,7 +11618,7 @@ var init_pixel_grid = __esm({
         return 1 / window.devicePixelRatio;
       }
       static max_scale() {
-        return this.size() / 8;
+        return this.size() / 4;
       }
       static set_scale(scale, origin) {
         scale = Math.max(scale, this.min_scale());

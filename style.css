@@ -254,7 +254,7 @@ body.dragging canvas#pixel-grid {
 
 @supports (backdrop-filter: blur()) {
     .slider::before {
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
     }
 }
 
@@ -270,7 +270,7 @@ body.dragging canvas#pixel-grid {
     border: 1px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
-    transition-property: --size;
+    transition-property: --size, box-shadow;
 }
 
 .slider.vertical .knob {

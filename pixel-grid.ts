@@ -146,7 +146,7 @@ export class PixelGrid {
     }
 
     static max_scale() {
-        return this.size() / 8;
+        return this.size() / 4;
     }
 
     static set_scale(scale: number, origin?: Point) {

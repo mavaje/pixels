@@ -6,21 +6,21 @@ export class ZoomSlider extends Slider {
     on_slide(event: PointerEvent, animate: boolean = true) {
         super.on_slide(event, animate);
 
-        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
-        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
+        const min_value = Math.log(PixelGrid.min_scale());
+        const max_value = Math.log(PixelGrid.max_scale());
 
         let zoom = this.value * min_value + (1 - this.value) * max_value;
 
-        const scale = 1.01 ** zoom;
+        const scale = Math.exp(zoom);
 
         PixelGrid.set_scale(scale);
     }
 
     sync_value() {
-        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
-        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
+        const min_value = Math.log(PixelGrid.min_scale());
+        const max_value = Math.log(PixelGrid.max_scale());
 
-        const zoom = Math.log(PixelGrid.scale) / Math.log(1.01);
+        const zoom = Math.log(PixelGrid.scale);
 
         const value = (max_value - zoom) / (max_value - min_value);
 
