@@ -11449,15 +11449,13 @@ var init_zoom_slider = __esm({
       tooltip() {
         let value = PixelGrid.scale;
         let round;
-        if (value < 1) {
+        if (value < 0.995) {
           round = (Math.round(value * 100) / 100).toFixed(2);
-        } else if (value < 10) {
+        } else if (value < 9.95) {
           round = (Math.round(value * 10) / 10).toFixed(1);
         } else {
           round = Math.round(value).toFixed(0);
         }
-        const match = round.match(/^(10*)\.0+$/);
-        if (match) round = match[1];
         return `${this.name} = ${round}\xD7`;
       }
     };
@@ -12305,6 +12303,7 @@ function on_move(event) {
         const last_pinch = last_points[0].minus(last_points[1]).distance();
         const ratio = Math.sqrt(pinch / last_pinch);
         PixelGrid.scale_by(ratio, centre);
+        Controls.zoom_slider.show_tooltip();
       }
     } else {
       tool.on_drag(active_button, point, pointers[event.pointerId][1]);

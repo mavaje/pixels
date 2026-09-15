@@ -79,14 +79,28 @@ body.dragging canvas#pixel-grid {
     position: absolute;
     bottom: 4px;
     left: 4px;
-    display: flex;
-    flex-direction: row;
+}
+#controls > .glass {
+    position: relative;
+    transform-origin: 0 100%;
+    transition-property: background, backdrop-filter, border-color, opacity, transform;
+}
+
+#controls:not(:hover) > .glass {
+    background: none;
+    backdrop-filter: none;
+    border-color: transparent;
+    transform: scale(0.5);
 }
 
 #toolbox {
     position: absolute;
     bottom: 4px;
     right: 4px;
+}
+
+#toolbox > .glass {
+    position: relative;
     display: flex;
     flex-direction: row;
 }
@@ -198,7 +212,6 @@ body.dragging canvas#pixel-grid {
 }
 
 #picker {
-    position: absolute;
     bottom: 54px;
     right: 4px;
     display: flex;
@@ -211,7 +224,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .slider {
-    --stops: #3f3f3f7f;
+    --stops: #0000007f;
     position: relative;
     width: 276px;
     height: 36px;
@@ -291,16 +304,6 @@ body.dragging .glass {
         background: #7f7f7f7f;
         backdrop-filter: blur(8px);
     }
-}
-
-.glass.fade {
-    transition-property: background, backdrop-filter, border-color, opacity;
-}
-
-.glass.fade:not(:hover) {
-    background: none;
-    backdrop-filter: blur(0);
-    border-color: transparent;
 }
 
 input {

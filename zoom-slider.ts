@@ -31,16 +31,13 @@ export class ZoomSlider extends Slider {
         let value = PixelGrid.scale;
         let round: string;
 
-        if (value < 1) {
+        if (value < 0.995) {
             round = (Math.round(value * 100) / 100).toFixed(2);
-        } else if (value < 10) {
+        } else if (value < 9.95) {
             round = (Math.round(value * 10) / 10).toFixed(1);
         } else {
             round = Math.round(value).toFixed(0);
         }
-
-        const match = round.match(/^(10*)\.0+$/);
-        if (match) round = match[1];
 
         return `${this.name} = ${round}×`;
     }

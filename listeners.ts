@@ -81,6 +81,7 @@ function on_move(event: PointerEvent) {
                 const last_pinch = last_points[0].minus(last_points[1]).distance();
                 const ratio = Math.sqrt(pinch / last_pinch);
                 PixelGrid.scale_by(ratio, centre);
+                Controls.zoom_slider.show_tooltip();
             }
         } else {
             tool.on_drag(active_button, point, pointers[event.pointerId][1]);
