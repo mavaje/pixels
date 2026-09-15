@@ -2,6 +2,7 @@ import {PixelGrid} from "./pixel-grid";
 import {Point} from "./point";
 import {Toolbox} from "./toolbox";
 import {Picker} from "./picker";
+import {Controls} from "./controls";
 
 const download_anchor = document.getElementById('downloader') as HTMLAnchorElement;
 
@@ -145,6 +146,7 @@ function on_scroll(event: WheelEvent) {
 
     if (event.ctrlKey || event.metaKey) {
         PixelGrid.zoom_by(event.deltaY, origin);
+        Controls.zoom_slider.show_tooltip();
     } else {
         const start = origin.grid();
         PixelGrid.move_by(delta);

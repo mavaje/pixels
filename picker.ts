@@ -1,5 +1,5 @@
 import {Pip} from "./pip";
-import {Slider} from "./slider";
+import {ColourSlider} from "./colour-slider";
 import {Colour, HSL, RGB} from "./colour";
 import {Palette} from "./palette";
 
@@ -8,20 +8,20 @@ export class Picker {
     static element = document.getElementById('picker');
 
     static pip: Pip = null;
-    static sliders: Slider[] = [];
+    static sliders: ColourSlider[] = [];
     static hex_input = document.getElementById('hex-input') as HTMLInputElement;
 
     static rgb: RGB;
     static hsl: HSL;
 
     static initialise() {
-        this.sliders.push(new Slider('slider-h', 'hsl', 'h'));
-        this.sliders.push(new Slider('slider-s', 'hsl', 's'));
-        this.sliders.push(new Slider('slider-l', 'hsl', 'l'));
+        this.sliders.push(new ColourSlider('slider-h', 'Hue', 'hsl', 'h'));
+        this.sliders.push(new ColourSlider('slider-s', 'Saturation', 'hsl', 's'));
+        this.sliders.push(new ColourSlider('slider-l', 'Lightness', 'hsl', 'l'));
 
-        this.sliders.push(new Slider('slider-r', 'rgb', 'r'));
-        this.sliders.push(new Slider('slider-g', 'rgb', 'g'));
-        this.sliders.push(new Slider('slider-b', 'rgb', 'b'));
+        this.sliders.push(new ColourSlider('slider-r', 'Red', 'rgb', 'r'));
+        this.sliders.push(new ColourSlider('slider-g', 'Green', 'rgb', 'g'));
+        this.sliders.push(new ColourSlider('slider-b', 'Blue', 'rgb', 'b'));
 
         this.hex_input.addEventListener('focus', () => {
             this.hex_input.setSelectionRange(1, 7);
@@ -65,6 +65,6 @@ export class Picker {
     }
 
     static update_sliders() {
-        this.sliders.forEach(slider => slider.set_value(this.pip.hex));
+        this.sliders.forEach(slider => slider.set_hex(this.pip.hex));
     }
 }

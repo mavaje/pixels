@@ -75,6 +75,14 @@ body.dragging canvas#pixel-grid {
     margin: 4px;
 }
 
+#controls {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    display: flex;
+    flex-direction: row;
+}
+
 #toolbox {
     position: absolute;
     bottom: 4px;
@@ -203,10 +211,16 @@ body.dragging canvas#pixel-grid {
 }
 
 .slider {
+    --stops: #0000003f;
     position: relative;
     width: 276px;
     height: 36px;
     cursor: pointer;
+}
+
+.slider.vertical {
+    width: 36px;
+    height: 276px;
 }
 
 .slider::before {
@@ -229,10 +243,16 @@ body.dragging canvas#pixel-grid {
     left: calc(17px - var(--size) / 2 + (100% - 36px) * var(--value));
     width: var(--size);
     height: var(--size);
+    background: white;
     border: 1px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 4px #0000007f;
     transition-property: --size;
+}
+
+.slider.vertical .knob {
+    top: calc(17px - var(--size) / 2 + (100% - 36px) * var(--value));
+    left: calc(17px - var(--size) / 2);
 }
 
 .slider:hover .knob {
@@ -310,7 +330,7 @@ input:focus-visible {
     width: 1px;
 }
 
-#tooltip.glass {
+#tooltip {
     position: absolute;
     min-height: 16px;
     border-radius: 12px;
@@ -325,7 +345,7 @@ input:focus-visible {
 }
 
 @supports (backdrop-filter: blur()) {
-    #tooltip.glass {
+    #tooltip {
         background: #0000007f;
     }
 }

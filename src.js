@@ -11322,6 +11322,170 @@ var init_block = __esm({
   }
 });
 
+// tooltip.ts
+var Tooltip;
+var init_tooltip = __esm({
+  "tooltip.ts"() {
+    Tooltip = class {
+      static {
+        this.element = document.getElementById("tooltip");
+      }
+      static {
+        this.timeout = null;
+      }
+      static show_on(target, content, space) {
+        target.addEventListener("pointermove", () => {
+          clearTimeout(this.timeout);
+          this.show(target, typeof content === "function" ? content() : content, space);
+        });
+        target.addEventListener("pointerleave", () => this.hide());
+      }
+      static show(target, content, space = 4, hide_after = 1.5) {
+        const { x, y, width, height } = target.getBoundingClientRect();
+        this.element.innerHTML = content;
+        const tt = this.element.getBoundingClientRect();
+        let left = Math.min(
+          x + (width - tt.width) / 2,
+          window.innerWidth - tt.width - 4
+        );
+        let top = y - tt.height - space;
+        if (left < 4) {
+          left = x + width + space;
+          top = Math.min(
+            y + (height - tt.height) / 2,
+            window.innerHeight - tt.height - 4
+          );
+        }
+        this.element.style.left = `${left}px`;
+        this.element.style.top = `${top}px`;
+        this.element.classList.remove("hidden");
+        clearTimeout(this.timeout);
+        if (hide_after) {
+          this.timeout = setTimeout(() => this.hide(), hide_after * 1e3);
+        }
+      }
+      static hide() {
+        this.element.classList.add("hidden");
+      }
+    };
+  }
+});
+
+// slider.ts
+var Slider;
+var init_slider = __esm({
+  "slider.ts"() {
+    init_tooltip();
+    Slider = class {
+      constructor(id, name4) {
+        this.name = name4;
+        this.element = document.getElementById(id);
+        this.vertical = this.element.classList.contains("vertical");
+        this.knob = document.createElement("div");
+        this.knob.classList.add("knob");
+        this.element.append(this.knob);
+        let dragging = false;
+        this.element.addEventListener("pointerdown", (event) => {
+          dragging = true;
+          this.on_slide(event);
+        });
+        document.addEventListener("pointermove", (event) => {
+          if (dragging) this.on_slide(event, false);
+        });
+        document.addEventListener("pointerup", () => {
+          if (dragging) {
+            Tooltip.hide();
+            dragging = false;
+          }
+        });
+        document.addEventListener("pointercancel", () => dragging = false);
+        Tooltip.show_on(this.element, () => this.tooltip(), -4);
+      }
+      on_slide(event, animate = true) {
+        const axis = this.vertical ? "y" : "x";
+        this.update_value(
+          (event[axis] - this.element.getBoundingClientRect()[axis] - 18) / 240,
+          animate
+        );
+        this.show_tooltip();
+      }
+      update_value(value, animate = true) {
+        this.value = Math.min(Math.max(value, 0), 1);
+        this.element.classList.toggle("animate", animate);
+        this.knob.style.setProperty("--value", String(this.value));
+      }
+      show_tooltip() {
+        Tooltip.show(this.element, this.tooltip(), -4);
+      }
+      tooltip() {
+        return `${this.name} = ${Math.round(this.value * 100)}%`;
+      }
+    };
+  }
+});
+
+// zoom-slider.ts
+var ZoomSlider;
+var init_zoom_slider = __esm({
+  "zoom-slider.ts"() {
+    init_slider();
+    init_pixel_grid();
+    ZoomSlider = class extends Slider {
+      on_slide(event, animate = true) {
+        super.on_slide(event, animate);
+        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
+        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
+        let zoom = this.value * min_value + (1 - this.value) * max_value;
+        const scale = 1.01 ** zoom;
+        PixelGrid.set_scale(scale);
+      }
+      sync_value() {
+        const min_value = Math.log(PixelGrid.min_scale()) / Math.log(1.01);
+        const max_value = Math.log(PixelGrid.max_scale()) / Math.log(1.01);
+        const zoom = Math.log(PixelGrid.scale) / Math.log(1.01);
+        const value = (max_value - zoom) / (max_value - min_value);
+        this.update_value(value, true);
+      }
+      tooltip() {
+        let value = PixelGrid.scale;
+        let round;
+        if (value < 1) {
+          round = (Math.round(value * 100) / 100).toFixed(2);
+        } else if (value < 10) {
+          round = (Math.round(value * 10) / 10).toFixed(1);
+        } else {
+          round = Math.round(value).toFixed(0);
+        }
+        const match = round.match(/^(10*)\.0+$/);
+        if (match) round = match[1];
+        return `${this.name} = ${round}\xD7`;
+      }
+    };
+  }
+});
+
+// controls.ts
+var controls_exports = {};
+__export(controls_exports, {
+  Controls: () => Controls
+});
+var Controls;
+var init_controls = __esm({
+  "controls.ts"() {
+    init_zoom_slider();
+    Controls = class {
+      static {
+        this.element = document.getElementById("controls");
+      }
+      static {
+        this.zoom_slider = new ZoomSlider("slider-zoom", "Zoom");
+      }
+      static initialise() {
+      }
+    };
+  }
+});
+
 // pixel-grid.ts
 var PixelGrid;
 var init_pixel_grid = __esm({
@@ -11329,6 +11493,7 @@ var init_pixel_grid = __esm({
     init_block();
     init_point();
     init_config();
+    init_controls();
     PixelGrid = class {
       static {
         this.centre = Point.grid(0, 0);
@@ -11451,15 +11616,22 @@ var init_pixel_grid = __esm({
       static move_by(delta) {
         this.move_to(this.centre.plus(delta));
       }
+      static min_scale() {
+        return 1 / window.devicePixelRatio;
+      }
+      static max_scale() {
+        return this.size() / 8;
+      }
       static set_scale(scale, origin) {
-        scale = Math.max(scale, 1 / window.devicePixelRatio);
-        scale = Math.min(scale, this.size() / 8);
+        scale = Math.max(scale, this.min_scale());
+        scale = Math.min(scale, this.max_scale());
         if (origin) {
           this.centre = this.centre.minus(origin).scale(this.scale / scale).plus(origin);
         }
         this.scale = scale;
         this.render();
         this.update_hash();
+        Controls.zoom_slider.sync_value();
       }
       static zoom_by(delta, origin) {
         this.scale_by(1.01 ** -delta, origin);
@@ -11570,40 +11742,6 @@ var init_icon = __esm({
   }
 });
 
-// tooltip.ts
-var Tooltip;
-var init_tooltip = __esm({
-  "tooltip.ts"() {
-    Tooltip = class {
-      static {
-        this.element = document.getElementById("tooltip");
-      }
-      static show_on(target, content, space) {
-        target.addEventListener("pointermove", () => {
-          this.show(target, typeof content === "function" ? content() : content, space);
-        });
-        target.addEventListener("pointerleave", () => this.hide());
-      }
-      static show(target, content, space = 4) {
-        const { x, y, width } = target.getBoundingClientRect();
-        this.element.innerHTML = content;
-        const tt = this.element.getBoundingClientRect();
-        const left = Math.min(
-          x + (width - tt.width) / 2,
-          window.innerWidth - tt.width - 4
-        );
-        const top = y - tt.height - space;
-        this.element.style.left = `${left}px`;
-        this.element.style.top = `${top}px`;
-        this.element.classList.remove("hidden");
-      }
-      static hide() {
-        this.element.classList.add("hidden");
-      }
-    };
-  }
-});
-
 // tools/tool.ts
 var Tool;
 var init_tool = __esm({
@@ -11690,39 +11828,20 @@ var init_move_tool = __esm({
   }
 });
 
-// slider.ts
-var Slider;
-var init_slider = __esm({
-  "slider.ts"() {
+// colour-slider.ts
+var ColourSlider;
+var init_colour_slider = __esm({
+  "colour-slider.ts"() {
     init_colour();
     init_picker();
-    init_tooltip();
-    Slider = class {
-      constructor(id, space, key) {
+    init_slider();
+    ColourSlider = class extends Slider {
+      constructor(id, name4, space, key) {
+        super(id, name4);
         this.space = space;
         this.key = key;
-        this.element = document.getElementById(id);
-        this.knob = document.createElement("div");
-        this.knob.classList.add("knob");
-        this.element.append(this.knob);
-        let dragging = false;
-        this.element.addEventListener("pointerdown", (event) => {
-          dragging = true;
-          this.on_slide(event);
-        });
-        document.addEventListener("pointermove", (event) => {
-          if (dragging) this.on_slide(event, false);
-        });
-        document.addEventListener("pointerup", () => {
-          if (dragging) {
-            Tooltip.hide();
-            dragging = false;
-          }
-        });
-        document.addEventListener("pointercancel", () => dragging = false);
-        Tooltip.show_on(this.element, () => this.tooltip(), -4);
       }
-      set_value(hex, animate = true, move = true) {
+      set_hex(hex, animate = true, move = true) {
         let stops;
         switch (this.space) {
           case "rgb":
@@ -11748,9 +11867,8 @@ var init_slider = __esm({
         this.knob.style.background = hex;
         if (move) this.knob.style.setProperty("--value", String(this.value));
       }
-      on_slide(event, animate = true) {
-        this.value = (event.x - this.element.getBoundingClientRect().x - 18) / 240;
-        this.value = Math.min(Math.max(this.value, 0), 1);
+      update_value(value, animate = true) {
+        super.update_value(value, animate);
         let hex;
         switch (this.space) {
           case "rgb":
@@ -11767,28 +11885,20 @@ var init_slider = __esm({
             break;
         }
         Picker.element.classList.add("animate");
-        this.element.classList.toggle("animate", animate);
         this.knob.style.background = hex;
-        this.knob.style.setProperty("--value", String(this.value));
         Picker.sliders.forEach((slider) => {
           if (this !== slider) {
-            slider.set_value(hex, animate, this.space !== slider.space);
+            slider.set_hex(hex, animate, this.space !== slider.space);
           }
         });
-        Tooltip.show(this.element, this.tooltip(), -4);
       }
       tooltip() {
-        const name4 = {
-          "r": "Red",
-          "g": "Green",
-          "b": "Blue",
-          "h": "Hue",
-          "s": "Saturation",
-          "l": "Lightness"
-        }[this.key];
-        const value = Math.round(this.value * (this.key === "h" ? 360 : 100));
-        const unit = this.key === "h" ? "\xB0" : "%";
-        return `${name4} = ${value}${unit}`;
+        switch (this.key) {
+          case "h":
+            return `${this.name} = ${Math.round(this.value * 360)}\xB0`;
+          default:
+            return super.tooltip();
+        }
       }
     };
   }
@@ -11802,7 +11912,7 @@ __export(picker_exports, {
 var Picker;
 var init_picker = __esm({
   "picker.ts"() {
-    init_slider();
+    init_colour_slider();
     init_colour();
     init_palette();
     Picker = class {
@@ -11819,12 +11929,12 @@ var init_picker = __esm({
         this.hex_input = document.getElementById("hex-input");
       }
       static initialise() {
-        this.sliders.push(new Slider("slider-h", "hsl", "h"));
-        this.sliders.push(new Slider("slider-s", "hsl", "s"));
-        this.sliders.push(new Slider("slider-l", "hsl", "l"));
-        this.sliders.push(new Slider("slider-r", "rgb", "r"));
-        this.sliders.push(new Slider("slider-g", "rgb", "g"));
-        this.sliders.push(new Slider("slider-b", "rgb", "b"));
+        this.sliders.push(new ColourSlider("slider-h", "Hue", "hsl", "h"));
+        this.sliders.push(new ColourSlider("slider-s", "Saturation", "hsl", "s"));
+        this.sliders.push(new ColourSlider("slider-l", "Lightness", "hsl", "l"));
+        this.sliders.push(new ColourSlider("slider-r", "Red", "rgb", "r"));
+        this.sliders.push(new ColourSlider("slider-g", "Green", "rgb", "g"));
+        this.sliders.push(new ColourSlider("slider-b", "Blue", "rgb", "b"));
         this.hex_input.addEventListener("focus", () => {
           this.hex_input.setSelectionRange(1, 7);
         });
@@ -11861,7 +11971,7 @@ var init_picker = __esm({
         Palette.save_cookie();
       }
       static update_sliders() {
-        this.sliders.forEach((slider) => slider.set_value(this.pip.hex));
+        this.sliders.forEach((slider) => slider.set_hex(this.pip.hex));
       }
     };
   }
@@ -12245,6 +12355,7 @@ function on_scroll(event) {
   const tool = Toolbox.active_tool();
   if (event.ctrlKey || event.metaKey) {
     PixelGrid.zoom_by(event.deltaY, origin);
+    Controls.zoom_slider.show_tooltip();
   } else {
     const start = origin.grid();
     PixelGrid.move_by(delta);
@@ -12321,6 +12432,7 @@ var init_listeners = __esm({
     init_point();
     init_toolbox();
     init_picker();
+    init_controls();
     download_anchor = document.getElementById("downloader");
     glasses = document.getElementsByClassName("glass");
     active_button = null;
@@ -12390,9 +12502,11 @@ var require_main = __commonJS({
     var palette_1 = (init_palette(), __toCommonJS(palette_exports));
     var favicon_1 = (init_favicon(), __toCommonJS(favicon_exports));
     var config_1 = (init_config(), __toCommonJS(config_exports));
+    var controls_1 = (init_controls(), __toCommonJS(controls_exports));
     console.info(`PIXELS - version ${config_1.CONFIG.version}`);
     favicon_1.Favicon.cycle();
     (0, listeners_1.register_listeners)();
+    controls_1.Controls.initialise();
     toolbox_1.Toolbox.initialise();
     palette_1.Palette.initialise();
     picker_1.Picker.initialise();

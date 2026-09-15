@@ -1,6 +1,7 @@
 import {Block} from "./db/block";
 import {Point} from "./point";
 import {DEBUG} from "./config";
+import {Controls} from "./controls";
 
 export class PixelGrid {
 
@@ -140,9 +141,17 @@ export class PixelGrid {
         this.move_to(this.centre.plus(delta));
     }
 
+    static min_scale() {
+        return 1 / window.devicePixelRatio;
+    }
+
+    static max_scale() {
+        return this.size() / 8;
+    }
+
     static set_scale(scale: number, origin?: Point) {
-        scale = Math.max(scale, 1 / window.devicePixelRatio);
-        scale = Math.min(scale, this.size() / 8);
+        scale = Math.max(scale, this.min_scale());
+        scale = Math.min(scale, this.max_scale());
 
         if (origin) {
             this.centre = this.centre
@@ -150,9 +159,12 @@ export class PixelGrid {
                 .scale(this.scale / scale)
                 .plus(origin);
         }
+
         this.scale = scale;
         this.render();
         this.update_hash();
+
+        Controls.zoom_slider.sync_value();
     }
 
     static zoom_by(delta: number, origin?: Point) {
