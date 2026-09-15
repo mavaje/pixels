@@ -211,7 +211,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .slider {
-    --stops: #0000003f;
+    --stops: #3f3f3f7f;
     position: relative;
     width: 276px;
     height: 36px;
@@ -291,6 +291,16 @@ body.dragging .glass {
         background: #7f7f7f7f;
         backdrop-filter: blur(8px);
     }
+}
+
+.glass.fade {
+    transition-property: background, backdrop-filter, border-color, opacity;
+}
+
+.glass.fade:not(:hover) {
+    background: none;
+    backdrop-filter: blur(0);
+    border-color: transparent;
 }
 
 input {
