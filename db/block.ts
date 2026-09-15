@@ -66,12 +66,14 @@ export class Block {
         }
     }
 
-    static async draw_line(
+    private static draw_timeout = null;
+    private static draw_blocks: Record<string, Record<string, string>> = {};
+    static draw_line(
         p1: Point,
         p2: Point,
         hex: string,
-    ): Promise<void> {
-        const blocks: Record<string, Record<string, string>> = {};
+    ) {
+        const blocks: Record<string, boolean> = {};
 
         p1 = p1.grid().floor();
         p2 = p2.grid().floor();
@@ -93,8 +95,10 @@ export class Block {
             const block_id = p.block_id();
             const pixel_id = p.pixel_id();
 
-            blocks[block_id] ??= {};
-            blocks[block_id][pixel_id] = db_hex;
+            blocks[block_id] = true;
+
+            this.draw_blocks[block_id] ??= {};
+            this.draw_blocks[block_id][pixel_id] = db_hex;
 
             Block.blocks[block_id]?.set_pixel(p, hex);
 
@@ -110,10 +114,19 @@ export class Block {
             }
         }
 
-        for (const [block_id, pixels] of Object.entries(blocks)) {
+        for (const block_id of Object.keys(blocks)) {
             Block.blocks[block_id]?.render();
-            await update(ref(db, `pixels/${block_id}`), pixels);
         }
+
+        clearTimeout(this.draw_timeout);
+        this.draw_timeout = setTimeout(() => {
+            console.log('updating blocks');
+            for (const [block_id, pixels] of Object.entries(this.draw_blocks)) {
+                update(ref(db, `pixels/${block_id}`), pixels);
+            }
+            this.draw_blocks = {};
+        }, 400);
+
     }
 
     static pixel_at(point: Point): string {

@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.0.9"
+      version: "1.1.0"
     };
     DEBUG = {
       block_borders: false
@@ -11249,7 +11249,13 @@ var init_block = __esm({
       static {
         this.blocks = {};
       }
-      static async draw_line(p1, p2, hex) {
+      static {
+        this.draw_timeout = null;
+      }
+      static {
+        this.draw_blocks = {};
+      }
+      static draw_line(p1, p2, hex) {
         const blocks = {};
         p1 = p1.grid().floor();
         p2 = p2.grid().floor();
@@ -11265,8 +11271,9 @@ var init_block = __esm({
         while (true) {
           const block_id = p.block_id();
           const pixel_id = p.pixel_id();
-          blocks[block_id] ??= {};
-          blocks[block_id][pixel_id] = db_hex;
+          blocks[block_id] = true;
+          this.draw_blocks[block_id] ??= {};
+          this.draw_blocks[block_id][pixel_id] = db_hex;
           _Block.blocks[block_id]?.set_pixel(p, hex);
           if (p.equals(p2)) break;
           const e2 = error2 * 2;
@@ -11279,10 +11286,17 @@ var init_block = __esm({
             p = p.plus(0, sy);
           }
         }
-        for (const [block_id, pixels] of Object.entries(blocks)) {
+        for (const block_id of Object.keys(blocks)) {
           _Block.blocks[block_id]?.render();
-          await update(ref(db, `pixels/${block_id}`), pixels);
         }
+        clearTimeout(this.draw_timeout);
+        this.draw_timeout = setTimeout(() => {
+          console.log("updating blocks");
+          for (const [block_id, pixels] of Object.entries(this.draw_blocks)) {
+            update(ref(db, `pixels/${block_id}`), pixels);
+          }
+          this.draw_blocks = {};
+        }, 400);
       }
       static pixel_at(point) {
         const block = _Block.blocks[point.block_id()];
