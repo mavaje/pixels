@@ -93,6 +93,10 @@ body.dragging canvas#pixel-grid {
     transform: scale(0.5);
 }
 
+#controls:not(:hover) > .glass .knob {
+    box-shadow: 0 2px 8px #000000;
+}
+
 #toolbox {
     position: absolute;
     bottom: 4px;
