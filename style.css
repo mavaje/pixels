@@ -252,6 +252,12 @@ body.dragging canvas#pixel-grid {
     background-image: linear-gradient(to right, var(--stops));
 }
 
+@supports (backdrop-filter: blur()) {
+    .slider::before {
+        backdrop-filter: blur(4px);
+    }
+}
+
 .slider .knob {
     --size: 18px;
     --value: 0;
