@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.1.0"
+      version: "1.1.1"
     };
     DEBUG = {
       block_borders: false
@@ -11401,6 +11401,7 @@ var init_slider = __esm({
         let dragging = false;
         this.element.addEventListener("pointerdown", (event) => {
           dragging = true;
+          this.element.classList.add("sliding");
           this.on_slide(event);
         });
         document.addEventListener("pointermove", (event) => {
@@ -11410,9 +11411,13 @@ var init_slider = __esm({
           if (dragging) {
             Tooltip.hide();
             dragging = false;
+            this.element.classList.remove("sliding");
           }
         });
-        document.addEventListener("pointercancel", () => dragging = false);
+        document.addEventListener("pointercancel", () => {
+          dragging = false;
+          this.element.classList.remove("sliding");
+        });
         Tooltip.show_on(this.element, () => this.tooltip(), -4);
       }
       on_slide(event, animate = true) {

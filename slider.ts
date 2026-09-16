@@ -22,6 +22,7 @@ export class Slider {
         let dragging  = false;
         this.element.addEventListener('pointerdown', event => {
             dragging = true;
+            this.element.classList.add('sliding');
             this.on_slide(event);
         });
         document.addEventListener('pointermove', event => {
@@ -31,9 +32,13 @@ export class Slider {
             if (dragging) {
                 Tooltip.hide();
                 dragging = false;
+                this.element.classList.remove('sliding');
             }
         });
-        document.addEventListener('pointercancel', () => dragging = false);
+        document.addEventListener('pointercancel', () => {
+            dragging = false;
+            this.element.classList.remove('sliding');
+        });
 
         Tooltip.show_on(this.element, () => this.tooltip(), -4);
     }

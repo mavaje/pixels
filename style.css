@@ -86,14 +86,14 @@ body.dragging canvas#pixel-grid {
     transition-property: background, backdrop-filter, border-color, opacity, transform;
 }
 
-#controls:not(:hover) > .glass {
+#controls:not(:hover):not(:has(.slider.sliding)) > .glass {
     background: none;
     backdrop-filter: none;
     border-color: transparent;
     transform: scale(0.5);
 }
 
-#controls:not(:hover) > .glass .knob {
+#controls:not(:hover):not(:has(.slider.sliding)) > .glass .knob {
     box-shadow: 0 2px 8px #000000;
 }
 
