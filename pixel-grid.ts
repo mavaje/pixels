@@ -149,7 +149,7 @@ export class PixelGrid {
         return this.size() / 4;
     }
 
-    static set_scale(scale: number, origin?: Point) {
+    static set_scale(scale: number, origin?: Point, animate: boolean = false) {
         scale = Math.max(scale, this.min_scale());
         scale = Math.min(scale, this.max_scale());
 
@@ -164,7 +164,7 @@ export class PixelGrid {
         this.render();
         this.update_hash();
 
-        Controls.zoom_slider.sync_value();
+        Controls.zoom_slider.sync_value(animate);
     }
 
     static zoom_by(delta: number, origin?: Point) {
@@ -175,8 +175,8 @@ export class PixelGrid {
         this.set_scale(this.scale * ratio, origin);
     }
 
-    static set_size(size: number) {
-        this.set_scale(this.size() / size);
+    static set_size(size: number, origin?: Point) {
+        this.set_scale(this.size() / size, origin);
     }
 
     private static timeout: NodeJS.Timeout = null;

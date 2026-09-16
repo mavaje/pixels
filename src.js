@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.1.1"
+      version: "1.1.2"
     };
     DEBUG = {
       block_borders: false
@@ -11456,14 +11456,14 @@ var init_zoom_slider = __esm({
         const max_value = Math.log(PixelGrid.max_scale());
         let zoom = this.value * min_value + (1 - this.value) * max_value;
         const scale = Math.exp(zoom);
-        PixelGrid.set_scale(scale);
+        PixelGrid.set_scale(scale, void 0, animate);
       }
-      sync_value() {
+      sync_value(animate = true) {
         const min_value = Math.log(PixelGrid.min_scale());
         const max_value = Math.log(PixelGrid.max_scale());
         const zoom = Math.log(PixelGrid.scale);
         const value = (max_value - zoom) / (max_value - min_value);
-        this.update_value(value, true);
+        this.update_value(value, animate);
       }
       tooltip() {
         let value = PixelGrid.scale;
@@ -11639,7 +11639,7 @@ var init_pixel_grid = __esm({
       static max_scale() {
         return this.size() / 4;
       }
-      static set_scale(scale, origin) {
+      static set_scale(scale, origin, animate = false) {
         scale = Math.max(scale, this.min_scale());
         scale = Math.min(scale, this.max_scale());
         if (origin) {
@@ -11648,7 +11648,7 @@ var init_pixel_grid = __esm({
         this.scale = scale;
         this.render();
         this.update_hash();
-        Controls.zoom_slider.sync_value();
+        Controls.zoom_slider.sync_value(animate);
       }
       static zoom_by(delta, origin) {
         this.scale_by(1.01 ** -delta, origin);
@@ -11656,8 +11656,8 @@ var init_pixel_grid = __esm({
       static scale_by(ratio, origin) {
         this.set_scale(this.scale * ratio, origin);
       }
-      static set_size(size) {
-        this.set_scale(this.size() / size);
+      static set_size(size, origin) {
+        this.set_scale(this.size() / size, origin);
       }
       static {
         this.timeout = null;

@@ -287,7 +287,7 @@ body.dragging canvas#pixel-grid {
 }
 
 .animate .slider.animate .knob {
-    transition-property: --size, left, background-color;
+    transition-property: --size, top, left, background-color;
 }
 
 .hidden {

@@ -13,10 +13,10 @@ export class ZoomSlider extends Slider {
 
         const scale = Math.exp(zoom);
 
-        PixelGrid.set_scale(scale);
+        PixelGrid.set_scale(scale, undefined, animate);
     }
 
-    sync_value() {
+    sync_value(animate: boolean = true) {
         const min_value = Math.log(PixelGrid.min_scale());
         const max_value = Math.log(PixelGrid.max_scale());
 
@@ -24,7 +24,7 @@ export class ZoomSlider extends Slider {
 
         const value = (max_value - zoom) / (max_value - min_value);
 
-        this.update_value(value, true);
+        this.update_value(value, animate);
     }
 
     tooltip(): string {
