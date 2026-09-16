@@ -43,11 +43,15 @@ export class Slider {
         Tooltip.show_on(this.element, () => this.tooltip(), -4);
     }
 
+    basis(): number {
+        const {x, y} = this.element.getBoundingClientRect();
+        return this.vertical ? y : x;
+    }
+
     on_slide(event: PointerEvent, animate: boolean = true) {
-        const axis = this.vertical ? 'y' : 'x';
         this.update_value(
-            (event[axis]
-                - this.element.getBoundingClientRect()[axis]
+            ((this.vertical ? event.y : event.x)
+                - this.basis()
                 - 18) / 240,
             animate,
         );

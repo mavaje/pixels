@@ -11420,10 +11420,13 @@ var init_slider = __esm({
         });
         Tooltip.show_on(this.element, () => this.tooltip(), -4);
       }
+      basis() {
+        const { x, y } = this.element.getBoundingClientRect();
+        return this.vertical ? y : x;
+      }
       on_slide(event, animate = true) {
-        const axis = this.vertical ? "y" : "x";
         this.update_value(
-          (event[axis] - this.element.getBoundingClientRect()[axis] - 18) / 240,
+          ((this.vertical ? event.y : event.x) - this.basis() - 18) / 240,
           animate
         );
         this.show_tooltip();
@@ -11450,7 +11453,21 @@ var init_zoom_slider = __esm({
     init_slider();
     init_pixel_grid();
     ZoomSlider = class extends Slider {
+      constructor() {
+        super(...arguments);
+        this.cached_basis = null;
+      }
+      is_shrunk() {
+        return getComputedStyle(this.element.parentElement).transform !== "none";
+      }
+      basis() {
+        if (!this.is_shrunk()) {
+          this.cached_basis = super.basis();
+        }
+        return this.cached_basis;
+      }
       on_slide(event, animate = true) {
+        if (this.basis() === null) return;
         super.on_slide(event, animate);
         const min_value = Math.log(PixelGrid.min_scale());
         const max_value = Math.log(PixelGrid.max_scale());
