@@ -3,22 +3,12 @@ import {PixelGrid} from "./pixel-grid";
 
 export class ZoomSlider extends Slider {
 
-    cached_basis: number = null;
-
     is_shrunk(): boolean {
         return getComputedStyle(this.element.parentElement).transform !== 'none';
     }
 
-    basis(): number {
-        if (!this.is_shrunk()) {
-            this.cached_basis = super.basis();
-        }
-
-        return this.cached_basis;
-    }
-
     on_slide(event: PointerEvent, animate: boolean = true) {
-        if (this.basis() === null) return;
+        if (this.is_shrunk()) return;
 
         super.on_slide(event, animate);
 

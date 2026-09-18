@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.1.2"
+      version: "1.1.3"
     };
     DEBUG = {
       block_borders: false
@@ -11291,7 +11291,6 @@ var init_block = __esm({
         }
         clearTimeout(this.draw_timeout);
         this.draw_timeout = setTimeout(() => {
-          console.log("updating blocks");
           for (const [block_id, pixels] of Object.entries(this.draw_blocks)) {
             update(ref(db, `pixels/${block_id}`), pixels);
           }
@@ -11453,21 +11452,11 @@ var init_zoom_slider = __esm({
     init_slider();
     init_pixel_grid();
     ZoomSlider = class extends Slider {
-      constructor() {
-        super(...arguments);
-        this.cached_basis = null;
-      }
       is_shrunk() {
         return getComputedStyle(this.element.parentElement).transform !== "none";
       }
-      basis() {
-        if (!this.is_shrunk()) {
-          this.cached_basis = super.basis();
-        }
-        return this.cached_basis;
-      }
       on_slide(event, animate = true) {
-        if (this.basis() === null) return;
+        if (this.is_shrunk()) return;
         super.on_slide(event, animate);
         const min_value = Math.log(PixelGrid.min_scale());
         const max_value = Math.log(PixelGrid.max_scale());

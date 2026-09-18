@@ -120,7 +120,6 @@ export class Block {
 
         clearTimeout(this.draw_timeout);
         this.draw_timeout = setTimeout(() => {
-            console.log('updating blocks');
             for (const [block_id, pixels] of Object.entries(this.draw_blocks)) {
                 update(ref(db, `pixels/${block_id}`), pixels);
             }
