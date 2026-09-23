@@ -27,6 +27,7 @@
 }
 
 html {
+    background: red; /* TEMPORARY DIAGNOSTIC - remove */
     height: 100%;
     width: 100%;
     margin: 0;
@@ -46,6 +47,7 @@ body {
 }
 
 canvas#pixel-grid {
+    background: lime; /* TEMPORARY DIAGNOSTIC - remove */
     --cursor: auto;
     --cursor-down: var(--cursor);
     flex: none;

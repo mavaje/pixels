@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.2.2"
+      version: "1.2.3"
     };
     DEBUG = {
       block_borders: false
@@ -12526,7 +12526,7 @@ var require_main = __commonJS({
     var favicon_1 = (init_favicon(), __toCommonJS(favicon_exports));
     var config_1 = (init_config(), __toCommonJS(config_exports));
     var controls_1 = (init_controls(), __toCommonJS(controls_exports));
-    console.info(`PIXELS - version ${config_1.CONFIG.version}`);
+    console.info(`Graffiniti - version ${config_1.CONFIG.version}`);
     favicon_1.Favicon.cycle();
     (0, listeners_1.register_listeners)();
     controls_1.Controls.initialise();

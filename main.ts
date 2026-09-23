@@ -6,7 +6,7 @@ import {Favicon} from "./favicon";
 import {CONFIG} from "./config";
 import {Controls} from "./controls";
 
-console.info(`PIXELS - version ${CONFIG.version}`);
+console.info(`Graffiniti - version ${CONFIG.version}`);
 
 Favicon.cycle();
 
