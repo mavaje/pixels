@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.2.0"
+      version: "1.2.1"
     };
     DEBUG = {
       block_borders: false

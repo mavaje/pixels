@@ -26,9 +26,17 @@
     -webkit-user-select: none;
 }
 
-html, body {
+html {
     height: 100%;
     width: 100%;
+    margin: 0;
+    display: flex;
+    overflow: hidden;
+}
+
+body {
+    position: fixed;
+    inset: 0;
     margin: 0;
     display: flex;
     overflow: hidden;
@@ -77,8 +85,8 @@ body.dragging canvas#pixel-grid {
 
 #controls {
     position: absolute;
-    bottom: 4px;
-    left: 4px;
+    bottom: calc(4px + env(safe-area-inset-bottom, 0));
+    left: calc(4px + env(safe-area-inset-left, 0));
 }
 #controls > .glass {
     position: relative;
@@ -99,8 +107,8 @@ body.dragging canvas#pixel-grid {
 
 #toolbox {
     position: absolute;
-    bottom: 4px;
-    right: 4px;
+    bottom: calc(4px + env(safe-area-inset-bottom, 0));
+    right: calc(4px + env(safe-area-inset-right, 0));
 }
 
 #toolbox > .glass {
@@ -216,8 +224,8 @@ body.dragging canvas#pixel-grid {
 }
 
 #picker {
-    bottom: 54px;
-    right: 4px;
+    bottom: calc(54px + env(safe-area-inset-bottom, 0));
+    right: calc(4px + env(safe-area-inset-right, 0));
     display: flex;
     flex-direction: column;
 }
