@@ -9,7 +9,7 @@ const download_anchor = document.getElementById('downloader') as HTMLAnchorEleme
 const glasses = document.getElementsByClassName('glass') as HTMLCollectionOf<HTMLElement>;
 
 function on_resize(event?: UIEvent) {
-    PixelGrid.resize();
+    PixelGrid.render();
 }
 
 function on_hash(event?: HashChangeEvent) {

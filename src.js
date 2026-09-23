@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.1.3"
+      version: "1.2.0"
     };
     DEBUG = {
       block_borders: false
@@ -11539,12 +11539,6 @@ var init_pixel_grid = __esm({
       static {
         this.pixel_preview = document.getElementById("pixel-preview");
       }
-      static resize() {
-        const { width, height } = document.body.getBoundingClientRect();
-        this.width = width;
-        this.height = height;
-        this.render();
-      }
       static size() {
         return Math.min(this.width, this.height);
       }
@@ -11594,6 +11588,9 @@ var init_pixel_grid = __esm({
         );
       }
       static render() {
+        const { width, height } = document.body.getBoundingClientRect();
+        this.width = width;
+        this.height = height;
         this.sync_canvas();
         this.sync_blocks();
         this.clear();
@@ -12282,7 +12279,7 @@ __export(listeners_exports, {
   register_listeners: () => register_listeners
 });
 function on_resize(event) {
-  PixelGrid.resize();
+  PixelGrid.render();
 }
 function on_hash(event) {
   const [x, y, z] = location.hash.slice(1).split(",").map(Number.parseFloat);

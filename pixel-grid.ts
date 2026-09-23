@@ -18,13 +18,6 @@ export class PixelGrid {
 
     private static pixel_preview = document.getElementById('pixel-preview');
 
-    static resize() {
-        const {width, height} = document.body.getBoundingClientRect();
-        this.width = width;
-        this.height = height;
-        this.render();
-    }
-
     static size(): number {
         return Math.min(this.width, this.height);
     }
@@ -85,13 +78,15 @@ export class PixelGrid {
     }
 
     static render() {
+        const {width, height} = document.body.getBoundingClientRect();
+        this.width = width;
+        this.height = height;
         this.sync_canvas();
         this.sync_blocks();
         this.clear();
         Object.values(Block.blocks).forEach(block => {
             block.render();
         });
-        // this.render_preview();
     }
 
     static render_block(block: Block): void {
