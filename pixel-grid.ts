@@ -47,6 +47,9 @@ export class PixelGrid {
         this.canvas.width = right - left;
         this.canvas.height = bottom - top;
 
+        this.canvas.style.width = `${this.canvas.width * this.scale}px`;
+        this.canvas.style.height = `${this.canvas.height * this.scale}px`;
+
         this.canvas.style.marginLeft = `${(left - this.left()) * this.scale}px`;
         this.canvas.style.marginRight = `${(this.right() - right) * this.scale}px`;
         this.canvas.style.marginTop = `${(top - this.top()) * this.scale}px`;

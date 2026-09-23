@@ -36,7 +36,10 @@ html {
 
 body {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     margin: 0;
     display: flex;
     overflow: hidden;
@@ -45,6 +48,7 @@ body {
 canvas#pixel-grid {
     --cursor: auto;
     --cursor-down: var(--cursor);
+    flex: none;
     image-rendering: pixelated;
     overflow: hidden;
     touch-action: none;

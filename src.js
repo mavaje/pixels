@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.2.1"
+      version: "1.2.2"
     };
     DEBUG = {
       block_borders: false
@@ -11561,6 +11561,8 @@ var init_pixel_grid = __esm({
         const bottom = Math.ceil(this.bottom());
         this.canvas.width = right - left;
         this.canvas.height = bottom - top;
+        this.canvas.style.width = `${this.canvas.width * this.scale}px`;
+        this.canvas.style.height = `${this.canvas.height * this.scale}px`;
         this.canvas.style.marginLeft = `${(left - this.left()) * this.scale}px`;
         this.canvas.style.marginRight = `${(this.right() - right) * this.scale}px`;
         this.canvas.style.marginTop = `${(top - this.top()) * this.scale}px`;
