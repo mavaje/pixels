@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.2.4"
+      version: "1.2.5"
     };
     DEBUG = {
       block_borders: false
@@ -12433,8 +12433,9 @@ function on_key_up(event) {
   Toolbox.update_cursor();
 }
 function register_listeners() {
-  window.addEventListener("resize", on_resize);
   window.addEventListener("hashchange", on_hash);
+  window.addEventListener("resize", on_resize);
+  screen.orientation.addEventListener("change", on_resize);
   PixelGrid.canvas.addEventListener("pointerdown", on_touch);
   document.addEventListener("pointermove", on_move);
   PixelGrid.canvas.addEventListener("pointerleave", on_leave);

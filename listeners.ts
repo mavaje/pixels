@@ -214,8 +214,10 @@ function on_key_up(event: KeyboardEvent) {
 }
 
 export function register_listeners() {
-    window.addEventListener('resize', on_resize);
     window.addEventListener('hashchange', on_hash);
+
+    window.addEventListener('resize', on_resize);
+    screen.orientation.addEventListener('change', on_resize);
 
     PixelGrid.canvas.addEventListener('pointerdown', on_touch);
     document.addEventListener('pointermove', on_move);

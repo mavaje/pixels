@@ -1,6 +1,6 @@
 
 export const CONFIG = {
-    version: '1.2.4',
+    version: '1.2.5',
 };
 
 export const DEBUG = {

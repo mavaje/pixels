@@ -89,8 +89,8 @@ body.dragging canvas#pixel-grid {
 
 #controls {
     position: absolute;
-    bottom: calc(4px + env(safe-area-inset-bottom, 0));
-    left: calc(4px + env(safe-area-inset-left, 0));
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    left: calc(4px + env(safe-area-inset-left, 0px));
 }
 #controls > .glass {
     position: relative;
@@ -111,8 +111,8 @@ body.dragging canvas#pixel-grid {
 
 #toolbox {
     position: absolute;
-    bottom: calc(4px + env(safe-area-inset-bottom, 0));
-    right: calc(4px + env(safe-area-inset-right, 0));
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    right: calc(4px + env(safe-area-inset-right, 0px));
 }
 
 #toolbox > .glass {
@@ -228,8 +228,8 @@ body.dragging canvas#pixel-grid {
 }
 
 #picker {
-    bottom: calc(54px + env(safe-area-inset-bottom, 0));
-    right: calc(4px + env(safe-area-inset-right, 0));
+    bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+    right: calc(4px + env(safe-area-inset-right, 0px));
     display: flex;
     flex-direction: column;
 }
