@@ -11109,7 +11109,7 @@ var CONFIG, DEBUG, FEATURE;
 var init_config = __esm({
   "config.ts"() {
     CONFIG = {
-      version: "1.2.3"
+      version: "1.2.4"
     };
     DEBUG = {
       block_borders: false
@@ -11362,7 +11362,7 @@ var init_tooltip = __esm({
           window.innerWidth - tt.width - 4
         );
         let top = y - tt.height - space;
-        if (left < 4) {
+        if (left < window.innerWidth / 4) {
           left = x + width + space;
           top = Math.min(
             y + (height - tt.height) / 2,

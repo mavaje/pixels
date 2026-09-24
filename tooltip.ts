@@ -26,7 +26,7 @@ export class Tooltip {
         );
         let top = y - tt.height - space;
 
-        if (left < 4) {
+        if (left < window.innerWidth / 4) {
             left = x + width + space;
             top = Math.min(
                 y + (height - tt.height) / 2,
