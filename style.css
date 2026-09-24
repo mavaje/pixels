@@ -53,6 +53,7 @@ canvas#pixel-grid {
     overflow: hidden;
     touch-action: none;
     cursor: var(--cursor);
+    background: white;
 }
 
 body.dragging canvas#pixel-grid {
